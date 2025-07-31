@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>草原ツール</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: start;
+      gap: 20px;
+      padding: 40px;
+    }
+    textarea {
+      width: 300px;
+      height: 400px;
+      white-space: pre;
+    }
+    button {
+      height: 40px;
+      padding: 0 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <textarea id="input" placeholder="ここに入力"></textarea>
+
+  <div>
+    <button onclick="convertText()">草原 ▶︎</button>
+  </div>
+
+  <textarea id="output" readonly placeholder="ここに出力"></textarea>
+
+  <script>
+    function convertText() {
+      const input = document.getElementById("input").value;
+      const lines = input.split('\n');
+      const converted = lines.map(line => {
+        const match = line.match(/^:MP-(\d+)$/);
+        if (match) {
+          let num = parseInt(match[1], 10);
+          num = Math.max(1, num - 2);
+          return `:MP-${num}`;
+        } else {
+          return line;
+        }
+      });
+      document.getElementById("output").value = converted.join('\n');
+    }
+  </script>
+
+</body>
+</html>
