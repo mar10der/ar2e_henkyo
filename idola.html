@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AR2Eエネミー総合管理ツール</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #151925;
+      --panel2: #1b2030;
+      --text: #e6e9ef;
+      --muted: #9aa4b2;
+      --acc: #4cc9f0;
+      --acc2: #a0e8ff;
+      --danger: #ff6b6b;
+      --ok: #7dd87d;
+      --warn: #ffd166;
+      --border: #2a3042;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      background: linear-gradient(180deg, #0d0f14 0%, #101522 100%);
+      color: var(--text)
+    }
+
+    header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(21, 25, 37, 0.85);
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(6px);
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: .5px;
+      flex: 1
+    }
+
+    header h1 .rights {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+
+
+    header .btn {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #0f1320;
+      color: var(--text);
+      cursor: pointer
+    }
+
+    #app {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 54px)
+    }
+
+    @media (max-width:1024px) {
+      #app {
+        grid-template-columns: 1fr
+      }
+
+      #left {
+        order: 2
+      }
+
+      #right {
+        order: 1
+      }
+    }
+
+    .panel {
+      border-right: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    #left {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 54px)
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel2);
+      flex-wrap: wrap
+    }
+
+    .toolbar input[type="search"] {
+      flex: 1;
+      min-width: 160px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #0f1320;
+      color: var(--text)
+    }
+
+    .toolbar button,
+    .toolbar label.btn {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #0f1320;
+      color: var(--text);
+      cursor: pointer
+    }
+
+    .toolbar button.primary {
+      background: linear-gradient(180deg, #1e2a44, #142039);
+      border-color: #223055
+    }
+
+    .toolbar button.danger {
+      background: #141312;
+      border-color: #552222;
+      color: #ffdede
+    }
+
+    .toolbar .small {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .list {
+      overflow: auto;
+      padding: 8px
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      background: #121827;
+      margin: 8px 0;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center
+    }
+
+    .card input[type="checkbox"] {
+      margin: 0 6px 0 4px
+    }
+
+    .card .title {
+      font-weight: 600
+    }
+
+    .card .meta {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .card .tags {
+      font-size: 12px;
+      color: var(--acc2)
+    }
+
+    .card .actions button {
+      background: #0f1320;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 6px 8px;
+      cursor: pointer;
+      margin-left: 6px
+    }
+
+    #right {
+      padding: 16px;
+      overflow: auto
+    }
+
+    .form {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px
+    }
+
+    .group {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: #121827
+    }
+
+    .group h3 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      color: var(--acc)
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 8px
+    }
+
+    .full {
+      grid-column: 1/-1
+    }
+
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 4px
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0f1320;
+      color: var(--text)
+    }
+
+    textarea {
+      min-height: 80px;
+      resize: vertical
+    }
+
+    .small {
+      max-width: 120px
+    }
+
+    .tiny {
+      max-width: 90px
+    }
+
+    .large {
+      font-size: 18px
+    }
+
+    .flex {
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .kv-row {
+      display: grid;
+      grid-template-columns: 20px 1fr 1fr 1fr 28px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px
+    }
+
+    .kv-row.param {
+      grid-template-columns: 20px 1fr 2fr 28px
+    }
+
+    .kv-row.react {
+      grid-template-columns: 20px 1fr 28px
+    }
+
+    .kv-row.drop {
+      grid-template-columns: 20px 1fr 2fr 1fr 80px 28px
+    }
+
+    .handle {
+      cursor: grab;
+      user-select: none;
+      text-align: center;
+      color: #9aa4b2
+    }
+
+    .btn {
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #0f1320;
+      color: #fff;
+      cursor: pointer
+    }
+
+    .btn.warn {
+      background: #2a2414;
+      border-color: #5a4a22
+    }
+
+    .btn.danger {
+      background: #2a1a1a;
+      border-color: #552222;
+      color: #ffdede
+    }
+
+    .badge {
+      font-size: 11px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px 8px;
+      color: #cfe7ff;
+      background: #0f1320
+    }
+
+    .toggle {
+      cursor: pointer;
+      color: var(--acc2);
+      font-size: 12px
+    }
+
+    .grid-gap {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 8px
+    }
+
+    .divider {
+      border-top: 1px dashed #2a3042;
+      margin: 8px 0
+    }
+
+    .ac-wrap {
+      position: relative
+    }
+
+    .ac-list {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      z-index: 10;
+      background: #0f1320;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px;
+      margin-top: 4px;
+      max-height: 220px;
+      overflow: auto;
+      display: none
+    }
+
+    .ac-item {
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer
+    }
+
+    .ac-item[aria-selected="true"],
+    .ac-item:hover {
+      background: #1a2236
+    }
+
+    .ac-empty {
+      padding: 6px 8px;
+      color: var(--muted)
+    }
+
+    /* dictionary & preset modals */
+    #dictModal,
+    #presetModal,
+    #settingsModal,
+    #commonModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50
+    }
+
+    #dictPanel,
+    #presetPanel,
+    #settingsPanel,
+    #commonPanel {
+      width: min(900px, 96vw);
+      max-height: 90vh;
+      overflow: auto;
+      border: 1px solid var(--border);
+      background: #101522;
+      border-radius: 12px;
+      padding: 12px
+    }
+
+    .dict-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 90px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px
+    }
+
+    .dict-row .btn {
+      width: 100%
+    }
+
+    .dict-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px
+    }
+
+    .dict-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .small-note {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .cs-row {
+      display: grid;
+      grid-template-columns: 20px 1fr 90px 90px 90px;
+      gap: 8px;
+      align-items: start;
+      margin-bottom: 6px;
+    }
+
+    .cs-row textarea {
+      min-height: 120px;
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0f1320;
+      color: var(--text);
+    }
+
+
+    /* test result toast */
+    #testToast {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 60;
+      display: none;
+      min-width: 260px;
+      border: 1px solid var(--border);
+      background: #0f1320;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, .35)
+    }
+
+    #testToast h4 {
+      margin: 0 0 6px 0;
+      font-size: 14px
+    }
+
+    #testToast .ok {
+      color: var(--ok)
+    }
+
+    #testToast .ng {
+      color: var(--danger)
+    }
+
+    #testToast ul {
+      margin: 6px 0 0 18px;
+      padding: 0;
+      max-height: 40vh;
+      overflow: auto
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>AR2Eエネミー総合管理ツール
+      <span class="rights">本作は、「著：菊池たけし／F.E.A.R」が権利を有する『アリアンロッドRPG2E』の二次創作作品です。(C)F.E.A.R. 「アリアンロッドRPG 2E」</span>
+    </h1>
+    
+    <button id="openSettings" class="btn">設定</button>
+    <button id="openCommon" class="btn">汎用スキル</button>
+    <button id="openDict" class="btn">辞書（登録）</button>
+    <button id="openPreset" class="btn">プリセット</button>
+    <button id="runSelfTest" class="btn">検証（開発用）</button>
+  </header>
+  <div id="app">
+    <section id="left" class="panel">
+      <div class="toolbar">
+        <input id="q" type="search" placeholder="検索（名前 / タグ / メモ）…">
+        <button id="btnNew" class="primary" title="N">新規</button>
+        <button id="btnDup" title="D">複製</button>
+        <button id="btnDel" class="danger" title="⌫">削除</button>
+        <span class="spacer"></span>
+        <button id="btnBackup" title="JSONを書き出し">バックアップ</button>
+        <label class="btn" title="JSONから復元">
+          復元<input id="fileRestore" type="file" accept="application/json" hidden>
+        </label>
+        <label class="btn" title="エネミーJSONから追加">
+          エネミー読み込み<input id="fileImportEnemies" type="file" accept="application/json" hidden>
+        </label>
+
+      </div>
+      <div class="toolbar">
+        <button id="sortName">名前順</button>
+        <button id="sortLevel">EL順</button>
+        <button id="sortUpdated">更新順</button>
+        <span class="small">チェックした項目を出力可</span>
+      </div>
+      <div id="list" class="list"></div>
+    </section>
+
+    <section id="right">
+      <div id="empty" class="group">左のリストから選ぶか「新規」を押してね。</div>
+      <form id="form" class="form" hidden>
+        <input type="hidden" id="id">
+
+        <div class="group">
+          <h3>基本</h3>
+          <div class="row">
+            <div class="full">
+              <label>名称 *</label>
+              <input id="name" type="text" class="large" required>
+            </div>
+            <div class="full">
+              <label>タグ（カンマ区切り）</label>
+              <input id="tags" type="text" placeholder="アンデッド, ボス, 城ダンジョン…">
+            </div>
+            <div style="grid-column: span 2;">
+              <label>種別</label>
+              <div class="flex" id="kindWrap">
+                <label><input type="radio" name="kind" value="solo"> ソロ</label>
+                <label><input type="radio" name="kind" value="mob"> モブ</label>
+              </div>
+            </div>
+            <div style="grid-column: span 2;">
+              <label>分類</label>
+              <div class="ac-wrap"><input id="group" type="text" class="tiny" data-ac="group"></div>
+            </div>
+            <div style="grid-column: span 2;">
+              <label>属性</label>
+              <div class="ac-wrap"><input id="element" type="text" class="tiny" data-ac="element" placeholder=""></div>
+            </div>
+            <div style="grid-column: span 3;">
+              <label>EL</label>
+              <input id="el" type="number" class="tiny" min="0" step="1" value="0">
+            </div>
+            <div style="grid-column: span 3;">
+              <label>識別値</label>
+              <input id="identify" type="number" class="tiny" min="0" step="1" value="0">
+            </div>
+            <div style="grid-column: span 3;">
+              <label>HP</label>
+              <input id="hp" type="number" min="0" step="1" value="10">
+            </div>
+            <div style="grid-column: span 3;">
+              <label>MP</label>
+              <input id="mp" type="number" class="tiny" min="0" step="1" value="0">
+            </div>
+            <div style="grid-column: span 3;">
+              <label>物理防御</label>
+              <input id="pdef" type="number" class="tiny" min="0" step="1" value="0">
+            </div>
+            <div style="grid-column: span 3;">
+              <label>魔法防御</label>
+              <input id="mdef" type="number" class="tiny" min="0" step="1" value="0">
+            </div>
+            <div style="grid-column: span 6;">
+              <label>行動値</label>
+              <input id="init" type="number" class="tiny" min="-99" step="1" value="0">
+            </div>
+            <div class="full" style="grid-column: span 6;">
+              <label>移動力</label>
+              <div class="flex">
+                <input id="moveM" type="number" class="tiny" min="0" step="1" value="6"> <span>m ／</span>
+                <span id="moveSq" class="badge">- Sq</span>
+              </div>
+              <div class="small-note">Sq は ⌈m/5⌉ で自動計算</div>
+            </div>
+            <div class="full">
+              <span class="toggle" id="toggleAbility">▼ 能力（基本値/能力値）を表示</span>
+            </div>
+            <div id="abilityWrap" class="full" style="display:none">
+              <div class="divider"></div>
+              <div class="full">
+                <table style="width:100%; border-collapse:collapse">
+                  <thead>
+                    <tr>
+                      <th style="text-align:left; padding:4px 6px; border-bottom:1px solid var(--border)">能力</th>
+                      <th style="text-align:left; padding:4px 6px; border-bottom:1px solid var(--border)">能力基本値</th>
+                      <th style="text-align:left; padding:4px 6px; border-bottom:1px solid var(--border)">能力値</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style="padding:6px">筋力</td>
+                      <td style="padding:6px"><input id="base_str" type="number" class="tiny" value="0"></td>
+                      <td style="padding:6px"><input id="abl_str" type="number" class="tiny" value="0"></td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px">器用</td>
+                      <td style="padding:6px"><input id="base_dex" type="number" class="tiny" value="0"></td>
+                      <td style="padding:6px"><input id="abl_dex" type="number" class="tiny" value="0"></td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px">敏捷</td>
+                      <td style="padding:6px"><input id="base_agi" type="number" class="tiny" value="0"></td>
+                      <td style="padding:6px"><input id="abl_agi" type="number" class="tiny" value="0"></td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px">知力</td>
+                      <td style="padding:6px"><input id="base_int" type="number" class="tiny" value="0"></td>
+                      <td style="padding:6px"><input id="abl_int" type="number" class="tiny" value="0"></td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px">感知</td>
+                      <td style="padding:6px"><input id="base_sen" type="number" class="tiny" value="0"></td>
+                      <td style="padding:6px"><input id="abl_sen" type="number" class="tiny" value="0"></td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px">精神</td>
+                      <td style="padding:6px"><input id="base_mnd" type="number" class="tiny" value="0"></td>
+                      <td style="padding:6px"><input id="abl_mnd" type="number" class="tiny" value="0"></td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px">幸運</td>
+                      <td style="padding:6px"><input id="base_luk" type="number" class="tiny" value="0"></td>
+                      <td style="padding:6px"><input id="abl_luk" type="number" class="tiny" value="0"></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="small-note">基本値変更で能力値は ⌊基本/3⌋ に自動更新（能力値を手で上書きしたらその値を保持）</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>ステータス <span class="small-note">（ドラッグで並べ替え）</span></h3>
+          <div id="statusList"></div>
+          <div class="flex" style="gap:8px; margin-top:6px">
+            <button type="button" id="syncStatus" class="btn">ステータスを更新する</button>
+            <button type="button" id="addStatus" class="btn warn">＋ 行を追加</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>パラメータ <span class="small-note">（ドラッグで並べ替え）</span></h3>
+          <div id="paramList"></div>
+          <button type="button" id="addParam" class="btn warn">＋ 行を追加</button>
+        </div>
+
+        <div class="group">
+          <h3>リアクション <span class="small-note">（ドラッグで並べ替え）</span></h3>
+          <div id="reactList"></div>
+          <div class="flex" style="gap:8px; margin-top:6px">
+            <button type="button" id="addReactMnd" class="btn">＋ 精神リアクションを追加</button>
+            <button type="button" id="addReact" class="btn warn">＋ 行を追加</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>メモ</h3>
+          <textarea id="memo" placeholder=""></textarea>
+        </div>
+
+        <div class="group">
+          <h3>スキルエディタ</h3>
+          <div class="row" id="skillHeader">
+            <div class="full" style="font-size:12px; color:var(--muted)">ヘッダー：名称｜SL｜可能/有効｜パワー｜タイミング｜射程｜対象｜予令｜持続｜使用制限
+            </div>
+            <div style="grid-column: span 3"><label>名称</label><input id="sk_name" type="text" value="《》"></div>
+            <div style="grid-column: span 1"><label>SL</label><input id="sk_sl" type="number" min="0" step="1"
+                value="1"></div>
+            <div style="grid-column: span 2"><label>可能/有効</label>
+              <div class="ac-wrap"><input id="sk_enable" type="text" data-ac="enable"></div>
+            </div>
+            <div style="grid-column: span 2"><label>パワー</label>
+              <div class="ac-wrap"><input id="sk_power" type="text" data-ac="power"></div>
+            </div>
+            <div style="grid-column: span 2"><label>タイミング</label>
+              <div class="ac-wrap"><input id="sk_timing" type="text" data-ac="timing"></div>
+            </div>
+            <div style="grid-column: span 2"><label>射程</label>
+              <div class="ac-wrap"><input id="sk_range" type="text" data-ac="range"></div>
+            </div>
+            <div style="grid-column: span 2"><label>対象</label>
+              <div class="ac-wrap"><input id="sk_target" type="text" data-ac="target"></div>
+            </div>
+            <div style="grid-column: span 2"><label>予令</label>
+              <div class="ac-wrap"><input id="sk_prep" type="text" data-ac="prep"></div>
+            </div>
+            <div style="grid-column: span 2"><label>持続</label>
+              <div class="ac-wrap"><input id="sk_duration" type="text" data-ac="duration"></div>
+            </div>
+            <div style="grid-column: span 2"><label>使用制限</label>
+              <div class="ac-wrap"><input id="sk_limit" type="text" data-ac="limit"></div>
+            </div>
+
+            <div class="full"></div>
+            <div class="full"><label>効果欄</label><textarea id="sk_effect" placeholder="ここに効果文を整形・出力します"></textarea>
+            </div>
+            <div class="full" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+              <button type="button" id="sk_insert" class="btn">挿入・変換</button>
+              <button type="button" id="sk_to_chat" class="btn warn">チャパレ挿入</button>
+              <button type="button" id="sk_to_memo" class="btn">メモ挿入</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>チャットパレット</h3>
+          <textarea id="chatPalette" placeholder="自由入力。スキルエディタ→チャパレ挿入で追記"></textarea>
+        </div>
+
+        <div class="group">
+          <h3>ドロップ品 <span class="small-note">（ドラッグで並べ替え）</span></h3>
+          <div id="dropList"></div>
+          <button type="button" id="addDrop" class="btn warn">＋ 行を追加</button>
+        </div>
+
+        <div class="group">
+          <h3>保存／出力</h3>
+          <div class="row">
+            <div class="full" style="display:flex; gap:8px; flex-wrap:wrap">
+              <button type="button" id="btnSaveOver" class="btn">上書き保存</button>
+              <button type="button" id="btnSaveAs" class="btn">名前を付けて保存</button>
+            </div>
+            <div class="full" style="display:flex; gap:8px; flex-wrap:wrap">
+              <button type="button" id="btnExportKoma" class="btn warn">このエネミーをコマ出力</button>
+              <button type="button" id="btnExportTextOne" class="btn warn">このエネミーをテキスト出力</button>
+              <button type="button" id="btnExportJsonOne" class="btn warn">このエネミーをjson出力（ファイル）</button>
+              <button type="button" id="btnExportJsonOneClip" class="btn warn">このエネミーをjson出力（クリップボード）</button>
+            </div>
+            <div class="full" style="display:flex; gap:8px; flex-wrap:wrap">
+              <button type="button" id="btnExportTextSel" class="btn">チェックをテキスト出力</button>
+              <button type="button" id="btnExportJsonSel" class="btn">チェックをjson出力（ファイル）</button>
+              <button type="button" id="btnExportJsonSelClip" class="btn">チェックをjson出力（クリップボード）</button>
+
+            </div>
+          </div>
+        </div>
+
+      </form>
+    </section>
+  </div>
+
+  <!-- Dictionary Modal -->
+  <div id="dictModal">
+    <div id="dictPanel">
+      <div class="dict-head">
+        <h3 style="margin:0">辞書（登録）</h3>
+        <button id="closeDict" class="btn">閉じる</button>
+      </div>
+      <div class="small-note">\語\ の形式で効果文中に書くと、ここで登録した文に置換される。</div>
+      <div id="dictList" style="margin-top:8px"></div>
+      <div class="dict-actions" style="margin-top:8px">
+        <button id="dictAdd" class="btn">＋ 行を追加</button>
+        <button id="dictSave" class="btn">保存</button>
+        <button id="dictExport" class="btn">エクスポート</button>
+        <label class="btn">インポート<input id="dictImport" type="file" accept="application/json" hidden></label>
+        <span class="small-note">保存するとローカルストレージに反映される。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preset Modal -->
+  <div id="presetModal">
+    <div id="presetPanel">
+      <div class="dict-head">
+        <h3 style="margin:0">プリセット</h3>
+        <button id="closePreset" class="btn">閉じる</button>
+      </div>
+      <div class="small-note">出力時に使うテンプレートなどを保管。</div>
+      <div style="margin:8px 0">
+        <label style="display:inline-flex; align-items:center; gap:6px; margin-right:12px">
+          <input type="radio" name="presetPos" value="top"> 一番上に挿入
+        </label>
+        <label style="display:inline-flex; align-items:center; gap:6px">
+          <input type="radio" name="presetPos" value="bottom" checked> 一番下に挿入
+        </label>
+      </div>
+      <textarea id="presetText" style="width:100%; min-height:180px" placeholder="ここにテンプレート文を書いて保存"></textarea>
+      <div class="dict-actions" style="margin-top:8px">
+        <button id="presetSave" class="btn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal">
+    <div id="settingsPanel">
+      <div class="dict-head">
+        <h3 style="margin:0">設定</h3>
+        <button id="closeSettings" class="btn">閉じる</button>
+      </div>
+
+      <div class="small-note">各種出力のふるまいを変更できるよ。</div>
+      <div style="display:grid; gap:10px; margin-top:8px">
+        <label style="display:flex; gap:6px; align-items:center">
+          <input id="setInitMinus" type="checkbox"> 行動値に-0.1して出力する
+        </label>
+
+        <label style="display:flex; gap:6px; align-items:center">
+          <input id="setIdentDrop" type="checkbox"> 識別でドロップ品を開示する
+        </label>
+
+        <div class="divider"></div>
+
+        <div style="display:grid; gap:8px">
+          <div>
+            <div class="small-note">チャットパレットに@を追加（空欄なら付与なし）</div>
+          </div>
+          <label style="display:grid; grid-template-columns: 120px 1fr; gap:8px; align-items:center">
+            <span>リアクション @</span>
+            <input id="setAtReact" type="text" placeholder="例: r">
+          </label>
+          <label style="display:grid; grid-template-columns: 120px 1fr; gap:8px; align-items:center">
+            <span>ドロップ品 @</span>
+            <input id="setAtDrop" type="text" placeholder="例: d">
+          </label>
+        </div>
+
+        <div class="dict-actions">
+          <button id="settingsSave" class="btn">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Common Skills Modal -->
+  <div id="commonModal">
+    <div id="commonPanel">
+      <div class="dict-head">
+        <h3 style="margin:0">汎用スキル</h3>
+        <button id="closeCommon" class="btn">閉じる</button>
+      </div>
+      <div class="small-note">よく使うエネミースキルを保管して、メモ／チャパレに追記できる。</div>
+
+      <div class="dict-actions" style="margin-top:8px">
+        <button id="commonAdd" class="btn">＋ 行を追加</button>
+        <button id="commonSave" class="btn">保存</button>
+        <button id="commonExport" class="btn">エクスポート</button>
+        <label class="btn">インポート<input id="commonImport" type="file" accept="application/json" hidden></label>
+      </div>
+
+      <div id="csList" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+
+
+  <!-- Self test toast -->
+  <div id="testToast">
+    <h4>自己テスト結果</h4>
+    <div id="testSummary"></div>
+    <ul id="testDetails"></ul>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script>
+    const LS_KEY = 'ar2e_enemies_v5_spec';
+    const LS_KEY_DICT = 'ar2e_dict_v1';
+    const LS_KEY_PRESET = 'ar2e_preset_v1';
+    const LS_KEY_SETTINGS = 'ar2e_settings_v1';
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(LS_KEY_SETTINGS);
+        return raw ? JSON.parse(raw) : { initMinus: false, identShowDrop: false, atReact: '', atDrop: '' };
+      } catch {
+        return { initMinus: false, identShowDrop: false, atReact: '', atDrop: '' };
+      }
+    }
+    function saveSettings(s) { localStorage.setItem(LS_KEY_SETTINGS, JSON.stringify(s)); }
+    let SETTINGS = loadSettings();
+    window.SETTINGS = SETTINGS; // 他関数から参照しやすく
+
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const nowISO = () => new Date().toISOString();
+    const uid = () => 'e_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+    function escapeHtml(s) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return String(s ?? '').replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function loadDB() { try { const raw = localStorage.getItem(LS_KEY); if (!raw) { return { enemies: seedSample(), updatedAt: nowISO() }; } const db = JSON.parse(raw); if (!db.enemies) db.enemies = []; return db; } catch (e) { return { enemies: [], updatedAt: nowISO() }; } }
+    function saveDB(db) { db.updatedAt = nowISO(); localStorage.setItem(LS_KEY, JSON.stringify(db)); }
+
+    const defaultDictPairs = [
+      ["パッシブ", "パッシブ。"], ["効果参照", "効果参照。"], ["同時使用", "《》と同時に使用する。"],
+      ["ムーブ", "ムーブアクション。"], ["マイナー", "マイナーアクション。"], ["メジャー", "メジャーアクション。"],
+      ["リアクション", "リアクション。"], ["フリー", "フリーアクション。"], ["レガシー", "レガシーアクション。"],
+      ["セットアップ", "セットアッププロセス。"], ["イニシアチブ", "イニシアチブプロセス。"], ["クリンナップ", "クリンナッププロセス。"],
+      ["判定直前", "判定の直前。"], ["判定直後", "判定の直後。"], ["DR直前", "DRの直前。"], ["DR直後", "DRの直後。"],
+      ["戦闘不能", "戦闘不能。"], ["アイテム", "アイテム。"], ["戦闘前", "戦闘前。"],
+      ["ダメージ増加", "ダメージ増加を行なう。"], ["武器攻撃", "武器攻撃を行なう。"], ["魔法攻撃", "魔法攻撃を行なう。"],
+      ["特殊攻撃", "特殊攻撃を行なう。"], ["対決", "対決を行なう。"], ["ダメージ軽減", "ダメージ軽減を行なう。"], ["HP回復", "HP回復を行なう。"],
+      ["ラウンド終了", "この効果はラウンド終了まで持続する。"],
+      ["シーン終了", "この効果はシーン終了まで持続する。"],
+      ["シナリオ終了", "この効果はシナリオ終了まで持続する。"],
+      ["ラウンド1", "1ラウンドに1回使用可能。"],
+      ["ラウンドSL", "1ラウンドにSL回使用可能。"],
+      ["シーン1", "1シーンに1回使用可能。"],
+      ["シーンSL", "1シーンにSL回使用可能。"],
+      ["シナリオ1", "1シナリオに1回使用可能。"],
+      ["シナリオSL", "1シナリオにSL回使用可能。"],
+      ["メイン1", "1メインプロセスに1回使用可能。"]
+    ];
+    function loadDict() { try { const raw = localStorage.getItem(LS_KEY_DICT); if (!raw) { const dict = defaultDictPairs.map(([k, v]) => ({ key: k, val: v })); localStorage.setItem(LS_KEY_DICT, JSON.stringify({ items: dict, updatedAt: nowISO() })); return { items: dict, updatedAt: nowISO() }; } return JSON.parse(raw); } catch { return { items: [], updatedAt: nowISO() }; } }
+    function saveDict(d) { d.updatedAt = nowISO(); localStorage.setItem(LS_KEY_DICT, JSON.stringify(d)); }
+    let DICT = loadDict();
+
+    // ==== Common Skills (汎用スキル) ====
+    const LS_KEY_COMMON = 'ar2e_common_skills_v1';
+    function loadCommon() {
+      try {
+        const raw = localStorage.getItem(LS_KEY_COMMON);
+        return raw ? JSON.parse(raw) : { items: [], updatedAt: nowISO() };
+      }
+      catch { return { items: [], updatedAt: nowISO() }; }
+    }
+    function saveCommon(d) { d.updatedAt = nowISO(); localStorage.setItem(LS_KEY_COMMON, JSON.stringify(d)); }
+    let COMMON = loadCommon();
+
+    const commonModal = $('#commonModal');
+    const csList = $('#csList');
+
+    function renderCommon() {
+      csList.innerHTML = '';
+      (COMMON.items || []).forEach((it, idx) => {
+        const row = document.createElement('div');
+        row.className = 'cs-row';
+        row.innerHTML = `
+      <div class="handle" title="ドラッグで並べ替え">☰</div>
+      <textarea data-idx="${idx}" placeholder="よく使うエネミースキルなどをここに。">${escapeHtml(it.text || '')}</textarea>
+      <button class="btn" data-memo>＋メモ</button>
+      <button class="btn" data-chat>＋チャパレ</button>
+      <button class="btn danger" data-del>削除</button>`;
+        row.querySelector('textarea').addEventListener('input', (ev) => {
+          COMMON.items[idx].text = ev.target.value;
+        });
+        row.querySelector('[data-memo]').addEventListener('click', () => addCommonTo('memo', idx));
+        row.querySelector('[data-chat]').addEventListener('click', () => addCommonTo('chat', idx));
+        row.querySelector('[data-del]').addEventListener('click', () => {
+          COMMON.items.splice(idx, 1); renderCommon(); saveCommon(COMMON);
+        });
+        csList.appendChild(row);
+      });
+      // 並べ替え
+      if (window.Sortable) {
+        new Sortable(csList, {
+          handle: '.handle', animation: 150,
+          onEnd: (ev) => { const moved = COMMON.items.splice(ev.oldIndex, 1)[0]; COMMON.items.splice(ev.newIndex, 0, moved); saveCommon(COMMON); }
+        });
+      }
+    }
+    function addCommonTo(target, idx) {
+      const e = getCurrent(); if (!e) return alert('まず対象を開いてね。');
+      const s = (COMMON.items[idx]?.text || '').trim(); if (!s) return;
+      if (target === 'memo') {
+        const el = $('#memo'); const nl = (el.value && !el.value.endsWith('\n')) ? '\n' : '';
+        el.value = el.value + nl + s; e.memo = el.value;
+      } else {
+        const el = $('#chatPalette'); const nl = (el.value && !el.value.endsWith('\n')) ? '\n' : '';
+        el.value = el.value + nl + s; e.chatPalette = el.value;
+      }
+      touchUpdate();
+    }
+
+    // モーダル操作／保存・入出力
+    $('#openCommon').addEventListener('click', () => { renderCommon(); commonModal.style.display = 'flex'; });
+    $('#closeCommon').addEventListener('click', () => commonModal.style.display = 'none');
+    commonModal.addEventListener('click', (e) => { if (e.target === commonModal) commonModal.style.display = 'none'; });
+
+    $('#commonAdd').addEventListener('click', () => { COMMON.items = COMMON.items || []; COMMON.items.push({ text: '' }); renderCommon(); });
+    $('#commonSave').addEventListener('click', () => { COMMON.items = (COMMON.items || []).filter(x => (x.text || '').trim() !== ''); saveCommon(COMMON); alert('保存したよ。'); });
+    $('#commonExport').addEventListener('click', () => { download(`common_skills_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(COMMON, null, 2), 'application/json'); });
+    $('#commonImport').addEventListener('change', (ev) => {
+      const file = ev.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!data || !Array.isArray(data.items)) throw new Error('items配列がない');
+          // 文字列配列でも {text:""} 配列でも受け取る
+          COMMON = { items: data.items.map(x => (typeof x === 'string' ? { text: x } : { text: x.text || '' })), updatedAt: nowISO() };
+          saveCommon(COMMON); renderCommon(); alert('インポート完了。');
+        } catch (err) { alert('インポート失敗：' + err.message); }
+      };
+      reader.readAsText(file);
+      ev.target.value = '';
+    });
+
+
+    function loadPreset() {
+      try {
+        const raw = localStorage.getItem(LS_KEY_PRESET);
+        if (!raw) { const p = { pos: 'bottom', text: '' }; localStorage.setItem(LS_KEY_PRESET, JSON.stringify(p)); return p; }
+        return JSON.parse(raw);
+      } catch { return { pos: 'bottom', text: '' }; }
+    }
+    function savePreset(p) { localStorage.setItem(LS_KEY_PRESET, JSON.stringify(p)); }
+    let PRESET = loadPreset();
+
+    function dictReplaceAll(text) {
+      if (!text) return text;
+      return text.replace(/\\([^\\]+)\\/g, (m, p1) => {
+        const key = (p1 || '').trim();
+        const hit = (DICT.items || []).find(x => x.key === key);
+        return hit ? hit.val : m;
+      });
+    }
+
+    let DB = loadDB(); let currentId = null; let sortMode = 'updated';
+    function renderList() {
+      const list = $('#list'); list.innerHTML = ''; const q = $('#q').value.trim().toLowerCase(); let items = DB.enemies.slice(); if (q) { items = items.filter(e => [e.name, (e.tags || []).join(' '), (e.reactions || []).join(' '), e.chatPalette || '', e.memo || ''].join(' ').toLowerCase().includes(q)); } if (sortMode === 'name') { items.sort((a, b) => a.name.localeCompare(b.name, 'ja')); } else if (sortMode === 'level') { items.sort((a, b) => (a.basic?.el || 0) - (b.basic?.el || 0) || a.name.localeCompare(b.name, 'ja')); } else { items.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)); }
+      if (items.length === 0) { list.innerHTML = '<div class="group">該当なし。右上の「新規」をどうぞ。</div>'; return; }
+      for (const e of items) {
+        const div = document.createElement('div'); div.className = 'card'; div.innerHTML = `
+      <input type="checkbox" class="pick" data-id="${e.id}"/>
+      <div>
+        <div class="title">${escapeHtml(e.name)} <span class="badge">EL:${e.basic?.el ?? 0}</span> ${e.basic?.group ? `<span class="badge">${escapeHtml(e.basic.group)}</span>` : ''} ${e.kind ? `<span class="badge">${e.kind === 'solo' ? 'ソロ' : 'モブ'}</span>` : ''}</div>
+        <div class="meta">HP:${e.basic?.hp ?? '-'} / MP:${e.basic?.mp ?? '-'} / 移動:${e.basic?.moveM ?? '-'}m（${ceilDiv(e.basic?.moveM, 5)}Sq）・更新:${fmtDate(e.updatedAt)}</div>
+        <div class="tags">${(e.tags || []).map(t => '#' + escapeHtml(t)).join(' ')}</div>
+      </div>
+      <div class="actions">
+        <button data-act="open" data-id="${e.id}">開く</button>
+        <button data-act="dup" data-id="${e.id}">複製</button>
+        <button data-act="del" data-id="${e.id}" style="color:#ffdede">削除</button>
+      </div>`; list.appendChild(div);
+      }
+    }
+    function fmtDate(s) { try { const d = new Date(s); return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` } catch { return '-'; } }
+    function ceilDiv(n, d) { n = Number(n || 0); return Math.ceil(n / d); }
+
+    function emptyToForm() { $('#empty').hidden = false; $('#form').hidden = true; currentId = null; }
+    function openToForm(e) {
+      // ⓪ 全入力を保存内容（またはデフォルト）で埋め直す
+      $('#empty').hidden = true; $('#form').hidden = false; currentId = e.id;
+      $('#id').value = e.id;
+      $('#name').value = e.name || '';
+      $('#tags').value = (e.tags || []).join(', ');
+      const kind = e.kind || 'solo'; $$('input[name="kind"]').forEach(r => r.checked = (r.value === kind));
+      $('#group').value = e.basic?.group || '';
+      $('#element').value = e.basic?.element || '';
+      $('#el').value = e.basic?.el ?? 0;
+      $('#identify').value = e.basic?.identify ?? 0;
+      $('#pdef').value = e.basic?.pdef ?? 0;
+      $('#mdef').value = e.basic?.mdef ?? 0;
+      $('#hp').value = e.basic?.hp ?? 0;
+      $('#mp').value = e.basic?.mp ?? 0;
+      $('#init').value = e.basic?.init ?? 0;
+      $('#moveM').value = e.basic?.moveM ?? 0;
+      updateMoveSq();
+      const B = e.basic?.ablBase || {}; const A = e.basic?.abl || {};
+      setVal('base_', B); setVal('abl_', A);
+      renderStatusList(e.statuses || []);
+      renderParamList(e.params || []);
+      // メモ（デフォルト：種別に応じて）
+      if (typeof e.memo !== 'string') { e.memo = (e.kind === 'mob' ? 'モブエネミー' : 'ソロエネミー'); }
+      $('#memo').value = e.memo;
+      // リアクション
+      if (!e.reactions) e.reactions = defaultReactions(e.kind || 'solo');
+      renderReactList(e.reactions);
+      // ドロップ
+      renderDropList(e.dropItems || []);
+      // チャパレ
+      $('#chatPalette').value = e.chatPalette || '';
+      // スキル名/SL同期
+      syncSkillNameSL();
+    }
+    function setVal(prefix, obj) { ['str', 'dex', 'agi', 'int', 'sen', 'mnd', 'luk'].forEach(k => { const el = $(`#${prefix}${k}`); if (el) el.value = obj?.[k] ?? 0; }); }
+
+    function renderStatusList(arr) {
+      const wrap = $('#statusList'); wrap.innerHTML = ''; if (!Array.isArray(arr) || arr.length === 0) { arr = [{ label: 'HP', cur: Number($('#hp').value || 0), max: Number($('#hp').value || 0), bind: 'hp' }, { label: '移動', cur: Number($('#moveM').value || 0), max: null, bind: 'move' }, { label: '物理', cur: Number($('#pdef').value || 0), max: null, bind: 'pdef' }, { label: '魔法', cur: Number($('#mdef').value || 0), max: null, bind: 'mdef' }]; getCurrent().statuses = arr; touchUpdate(); }
+      arr.forEach((row, idx) => wrap.appendChild(makeStatusRow(row, idx)));
+      makeSortable(wrap, 'statuses');
+    }
+    function makeStatusRow(row, idx) {
+      const div = document.createElement('div'); div.className = 'kv-row'; div.dataset.idx = idx; div.innerHTML = `
+    <div class="handle" title="ドラッグで並べ替え">☰</div>
+    <input type="text" data-field="label" value="${escapeHtml(row.label ?? '')}" placeholder="ラベル">
+    <input type="number" data-field="cur" value="${row.cur ?? ''}" placeholder="現在値">
+    <input type="number" data-field="max" value="${row.max ?? ''}" placeholder="最大値（任意）">
+    <button type="button" class="btn danger" data-del>×</button>`;
+      div.querySelectorAll('input').forEach(inp => { inp.addEventListener('input', () => { const field = inp.dataset.field; const val = inp.type === 'number' ? (inp.value === '' ? null : Number(inp.value)) : inp.value; const target = getCurrent().statuses[idx] || (getCurrent().statuses[idx] = {}); target[field] = val; touchUpdate(); }); });
+      div.querySelector('[data-del]').addEventListener('click', () => { getCurrent().statuses.splice(idx, 1); renderStatusList(getCurrent().statuses); touchUpdate(); });
+      return div;
+    }
+
+    function renderParamList(arr) { const wrap = $('#paramList'); wrap.innerHTML = ''; (arr || []).forEach((row, idx) => wrap.appendChild(makeParamRow(row, idx))); makeSortable(wrap, 'params'); }
+    function makeParamRow(row, idx) {
+      const div = document.createElement('div'); div.className = 'kv-row param'; div.dataset.idx = idx; div.innerHTML = `
+    <div class="handle" title="ドラッグで並べ替え">☰</div>
+    <input type="text" data-field="label" value="${escapeHtml(row.label ?? '')}" placeholder="ラベル">
+    <input type="text" data-field="value" value="${escapeHtml(row.value ?? '')}" placeholder="値">
+    <button type="button" class="btn danger" data-del>×</button>`;
+      div.querySelectorAll('input').forEach(inp => { inp.addEventListener('input', () => { const field = inp.dataset.field; const val = inp.value; const target = getCurrent().params[idx] || (getCurrent().params[idx] = {}); target[field] = val; touchUpdate(); }); });
+      div.querySelector('[data-del]').addEventListener('click', () => { getCurrent().params.splice(idx, 1); renderParamList(getCurrent().params); touchUpdate(); });
+      return div;
+    }
+
+    function defaultReactions(kind) { return kind === 'solo' ? ['7+2D>=? 回避判定', '5+2D>=? 精神リアクション'] : ['5+2D>=? リアクション']; }
+    function renderReactList(arr) { const wrap = $('#reactList'); wrap.innerHTML = ''; if (!Array.isArray(arr)) arr = []; arr.forEach((line, idx) => wrap.appendChild(makeReactRow(line, idx))); makeSortable(wrap, 'reactions'); }
+    function makeReactRow(line, idx) {
+      const div = document.createElement('div'); div.className = 'kv-row react'; div.dataset.idx = idx; div.innerHTML = `
+    <div class="handle" title="ドラッグで並べ替え">☰</div>
+    <input type="text" data-field="line" value="${escapeHtml(line || '')}" placeholder="例: 5+2D>=? リアクション">
+    <button type="button" class="btn danger" data-del>×</button>`;
+      const inp = div.querySelector('input'); inp.addEventListener('input', () => { getCurrent().reactions[idx] = inp.value; touchUpdate(); });
+      div.querySelector('[data-del]').addEventListener('click', () => { getCurrent().reactions.splice(idx, 1); renderReactList(getCurrent().reactions); touchUpdate(); });
+      return div;
+    }
+
+    // ドロップ品
+    function renderDropList(arr) { const wrap = $('#dropList'); wrap.innerHTML = ''; if (!Array.isArray(arr)) arr = []; arr.forEach((row, idx) => wrap.appendChild(makeDropRow(row, idx))); makeSortable(wrap, 'dropItems'); }
+    function makeDropRow(row, idx) {
+      const div = document.createElement('div'); div.className = 'kv-row drop'; div.dataset.idx = idx; const def = { roll: '～', name: '', price: 'G', count: 1, ...row };
+      div.innerHTML = `
+    <div class="handle" title="ドラッグで並べ替え">☰</div>
+    <input type="text" data-field="roll"  value="${escapeHtml(def.roll)}"  placeholder="ロール（例：1-2）">
+    <input type="text" data-field="name"  value="${escapeHtml(def.name)}"  placeholder="名称">
+    <input type="text" data-field="price" value="${escapeHtml(def.price)}" placeholder="金額（例：100G）">
+    <input type="number" class="tiny" data-field="count" value="${def.count}" min="1" step="1">
+    <button type="button" class="btn danger" data-del>×</button>`;
+      div.querySelectorAll('input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const field = inp.dataset.field;
+          const val = (field === 'count') ? Number(inp.value || 1) : inp.value;
+          const target = getCurrent().dropItems[idx] || (getCurrent().dropItems[idx] = {});
+          target[field] = val; touchUpdate();
+        });
+      });
+      div.querySelector('[data-del]').addEventListener('click', () => { getCurrent().dropItems.splice(idx, 1); renderDropList(getCurrent().dropItems); touchUpdate(); });
+      return div;
+    }
+
+    function makeSortable(container, key) { if (!window.Sortable) return; new Sortable(container, { handle: '.handle', animation: 150, onEnd: (evt) => { const arr = getCurrent()[key]; if (!arr) return; const moved = arr.splice(evt.oldIndex, 1)[0]; arr.splice(evt.newIndex, 0, moved); touchUpdate(true); } }); }
+
+    function bindBasicsSync() {
+      $('#hp').addEventListener('input', () => { const e = getCurrent(); if (!e) return; e.basic.hp = num($('#hp').value); syncStatus(e, 'hp'); touchUpdate(true); });
+      $('#moveM').addEventListener('input', () => { updateMoveSq(); const e = getCurrent(); if (!e) return; e.basic.moveM = num($('#moveM').value); syncStatus(e, 'move'); touchUpdate(true); });
+      $('#pdef').addEventListener('input', () => { const e = getCurrent(); if (!e) return; e.basic.pdef = num($('#pdef').value); syncStatus(e, 'pdef'); touchUpdate(true); });
+      $('#mdef').addEventListener('input', () => { const e = getCurrent(); if (!e) return; e.basic.mdef = num($('#mdef').value); syncStatus(e, 'mdef'); touchUpdate(true); });
+      const kindHandler = () => {
+        const e = getCurrent(); if (!e) return;
+        const sel = $$('input[name="kind"]:checked')[0];
+        const prev = e.kind || 'solo';
+        const next = sel ? sel.value : 'solo';
+        if (prev !== next) {
+          e.kind = next;
+          // リアクション更新確認
+          if (confirm('リアクションを更新しますか？')) {
+            e.reactions = defaultReactions(next);
+            renderReactList(e.reactions);
+          }
+          // メモ更新確認
+          if (confirm('メモを種別のデフォルトに更新しますか？')) {
+            e.memo = (next === 'mob' ? 'モブエネミー' : 'ソロエネミー');
+            $('#memo').value = e.memo;
+          }
+          touchUpdate();
+        }
+      };
+      $$('input[name="kind"]').forEach(r => { r.addEventListener('change', kindHandler); r.addEventListener('input', kindHandler); });
+
+      // メモ保持
+      $('#memo').addEventListener('input', () => { const e = getCurrent(); if (!e) return; e.memo = $('#memo').value; touchUpdate(); });
+    }
+    function bindAbilities() {
+      ['str', 'dex', 'agi', 'int', 'sen', 'mnd', 'luk'].forEach(k => {
+        const baseEl = document.querySelector('#base_' + k);
+        const ablEl = document.querySelector('#abl_' + k);
+        if (baseEl) { baseEl.addEventListener('input', () => { const e = getCurrent(); if (!e) return; const v = num(baseEl.value); e.basic.ablBase[k] = v; if (!ablEl.dataset.userEdited) { const out = Math.floor(v / 3); ablEl.value = out; e.basic.abl[k] = out; } touchUpdate(); }); }
+        if (ablEl) { ablEl.addEventListener('input', () => { const e = getCurrent(); if (!e) return; ablEl.dataset.userEdited = '1'; e.basic.abl[k] = num(ablEl.value); touchUpdate(); }); }
+      });
+    }
+
+    const presetCandidates = {
+      group: ["植物", "動物", "人間", "妖精", "妖魔", "アンデッド", "精霊", "人造生物", "機械", "魔獣", "霊獣", "巨人", "竜", "魔族"],
+      element: ["-", "火", "水", "地", "風", "光", "闇"],
+      enable: ["で使用可能。", "に有効。"],
+      power: ["パワー。"],
+      timing: ["\\パッシブ\\", "\\効果参照\\", "\\同時使用\\", "\\ムーブ\\", "\\マイナー\\", "\\メジャー\\", "\\リアクション\\", "\\フリー\\", "\\レガシー\\", "\\セットアップ\\", "\\イニシアチブ\\", "\\クリンナップ\\", "\\判定直前\\", "\\判定直後\\", "\\DR直前\\", "\\DR直後\\", "\\戦闘不能\\", "\\アイテム\\", "\\戦闘前\\"],
+      range: ["10m以内の", "20m以内の", "30m以内の", "至近の", "視界内の", "シーン内の"],
+      target: ["単体に", "SL体に", "範囲（選択）に", "場面（選択）に", "範囲に", "場面に", "十字（選択）に", "直線（選択）に"],
+      prep: ["\\ダメージ増加\\", "\\武器攻撃\\", "\\魔法攻撃\\", "\\特殊攻撃\\", "\\対決\\", "\\ダメージ軽減\\", "\\HP回復\\"],
+      duration: ["\\ラウンド終了\\", "\\シーン終了\\", "\\シナリオ終了\\"],
+      limit: ["\\ラウンド1\\", "\\ラウンドSL\\", "\\シーン1\\", "\\シーンSL\\", "\\シナリオ1\\", "\\シナリオSL\\", "\\メイン1\\"]
+    };
+    function collectDynamic(field) { const set = new Set(presetCandidates[field] || []); if (field === 'group' || field === 'element') { DB.enemies.forEach(e => { const v = e?.basic?.[field]; if (v) set.add(v); }); } return Array.from(set); }
+    function makeAutocomplete(input, field) {
+      const wrap = input.closest('.ac-wrap') || input.parentElement; const list = document.createElement('div'); list.className = 'ac-list'; wrap.appendChild(list); let items = []; let index = -1; let composing = false; input.setAttribute('role', 'combobox'); input.setAttribute('aria-expanded', 'false'); function open() { list.style.display = 'block'; input.setAttribute('aria-expanded', 'true'); } function close() { list.style.display = 'none'; input.setAttribute('aria-expanded', 'false'); index = -1; }
+      function render(q) { const all = collectDynamic(field); const norm = s => String(s).toLowerCase(); const nq = norm(q); items = (q ? all.filter(v => norm(v).includes(nq)) : all).slice(0, 24); list.innerHTML = items.length ? items.map((v, i) => `<div class="ac-item" role="option" data-i="${i}">${escapeHtml(v)}</div>`).join('') : '<div class="ac-empty">候補なし</div>'; list.querySelectorAll('.ac-item').forEach(el => { el.addEventListener('mousedown', (ev) => { ev.preventDefault(); pick(+el.dataset.i); }); }); open(); }
+      function pick(i) { if (i < 0 || i >= items.length) return; input.value = items[i]; input.dispatchEvent(new Event('input')); close(); }
+      input.addEventListener('focus', () => { render(input.value.trim()); }); input.addEventListener('compositionstart', () => composing = true); input.addEventListener('compositionend', () => { composing = false; render(input.value.trim()); }); input.addEventListener('input', () => { if (composing) return; render(input.value.trim()); }); input.addEventListener('keydown', (e) => { if (list.style.display === 'none') return; if (e.key === 'ArrowDown') { e.preventDefault(); index = Math.min(index + 1, items.length - 1); highlight(); } else if (e.key === 'ArrowUp') { e.preventDefault(); index = Math.max(index - 1, 0); highlight(); } else if (e.key === 'Enter') { if (index >= 0) { e.preventDefault(); pick(index); } else { close(); } } else if (e.key === 'Escape') { e.preventDefault(); close(); } }); function highlight() { list.querySelectorAll('.ac-item').forEach((el, i) => el.setAttribute('aria-selected', String(i === index))); } document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) close(); });
+    }
+
+    function num(v, def = 0) { const n = parseInt(v, 10); return Number.isFinite(n) ? n : def; }
+    function getCurrent() { return DB.enemies.find(e => e.id === currentId); }
+    function touchUpdate(reopen = false) {
+      const e = getCurrent(); if (!e) return; e.identInfo = buildIdentInfo(e);
+      e.komaInfo = buildKomaInfo(e); e.updatedAt = nowISO(); saveDB(DB); renderList(); if (reopen) openToForm(e);
+    }
+    function newEnemy() {
+      const kind = 'solo';
+      const e = { id: uid(), name: '新しいエネミー', tags: [], kind, basic: { group: '', element: '', el: 0, identify: 0, pdef: 0, mdef: 0, hp: 10, mp: 0, init: 0, moveM: 6, ablBase: { str: 0, dex: 0, agi: 0, int: 0, sen: 0, mnd: 0, luk: 0 }, abl: { str: 0, dex: 0, agi: 0, int: 0, sen: 0, mnd: 0, luk: 0 } }, reactions: defaultReactions(kind), statuses: [], params: [], dropItems: [], chatPalette: '', memo: (kind === 'mob' ? 'モブエネミー' : 'ソロエネミー'), createdAt: nowISO(), updatedAt: nowISO() };
+      DB.enemies.push(e); saveDB(DB); renderList(); openToForm(e);
+    }
+    function duplicateEnemy(id) { const src = DB.enemies.find(e => e.id === id); if (!src) return; const copy = JSON.parse(JSON.stringify(src)); copy.id = uid(); copy.name = src.name + '（複製）'; copy.createdAt = nowISO(); copy.updatedAt = nowISO(); DB.enemies.push(copy); saveDB(DB); renderList(); openToForm(copy); }
+    function deleteSelected() { const picked = pickedIds(); if (picked.length === 0 && currentId) picked.push(currentId); if (picked.length === 0) return alert('削除対象が選ばれていないよ。'); if (!confirm(`${picked.length}件削除するよ。よい？`)) return; DB.enemies = DB.enemies.filter(e => !picked.includes(e.id)); if (picked.includes(currentId)) emptyToForm(); saveDB(DB); renderList(); }
+    function pickedIds() { return $$('#list .card input.pick:checked').map(i => i.dataset.id); }
+    function saveCurrent() { if (!currentId) return alert('対象がないよ。'); const e = getCurrent(); if (!e) return; e.name = $('#name').value.trim() || '無名のエネミー'; e.tags = $('#tags').value.split(',').map(s => s.trim()).filter(Boolean); const kindSel = $$('input[name="kind"]:checked')[0]; e.kind = kindSel ? kindSel.value : 'solo'; e.basic.group = $('#group').value; e.basic.element = $('#element').value; e.basic.el = num($('#el').value); e.basic.identify = num($('#identify').value); e.basic.pdef = num($('#pdef').value); e.basic.mdef = num($('#mdef').value); e.basic.hp = num($('#hp').value); e.basic.mp = num($('#mp').value); e.basic.init = num($('#init').value); e.basic.moveM = num($('#moveM').value);['str', 'dex', 'agi', 'int', 'sen', 'mnd', 'luk'].forEach(k => { e.basic.ablBase[k] = num($(`#base_${k}`).value); e.basic.abl[k] = num($(`#abl_${k}`).value); }); e.chatPalette = $('#chatPalette').value; e.memo = $('#memo').value; e.updatedAt = nowISO(); saveDB(DB); renderList(); }
+
+    // export helpers
+    function buildExportRow(e) { return { id: e.id, name: e.name, maxHP: e.basic.hp, currentHP: e.basic.hp, init: e.basic.init, tags: (e.tags || []).join(' '), note: (e.reactions || []).join(' / ') }; }
+    function toCSV(rows) { if (rows.length === 0) return ''; const headers = Object.keys(rows[0]); const esc = v => { if (v == null) return ''; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s }; return [headers.join(','), ...rows.map(r => headers.map(h => esc(r[h])).join(','))].join('\n'); }
+    function download(filename, text, type = 'text/plain') { const blob = new Blob([text], { type }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0); }
+    function exportByIdsJSON(ids) { const rows = DB.enemies.filter(e => ids.includes(e.id)); download(`enemies_${ids.length}件.json`, JSON.stringify(rows, null, 2), 'application/json'); }
+    // ── 追加：スキル行抽出（《で始まる行）
+    function extractSkillLines(e) {
+      const lines = ((e.memo || '') + '\n' + (e.chatPalette || ''))
+        .split('\n').map(s => s.trim())
+        .filter(s => s.startsWith('《'));
+      // 重複削除
+      return Array.from(new Set(lines));
+    }
+
+    // ── 追加：識別情報を構築（常時更新用）
+    function buildIdentInfo(e) {
+      const name = e.name || '';
+      const g = e.basic?.group || '';
+      const el = Number(e.basic?.el || 0);
+      const elm = (e.basic?.element ?? '');
+      const idv = Number(e.basic?.identify || 0);
+      const pdef = Number(e.basic?.pdef || 0);
+      const mdef = Number(e.basic?.mdef || 0);
+      let defHint = '物理＝魔法';
+      if (pdef > mdef) defHint = '物理＞魔法';
+      else if (pdef < mdef) defHint = '物理＜魔法';
+      const skills = extractSkillLines(e);
+      const body = [
+        `名称：${name}`,
+        `分類：${g}、属性：${elm}、EL：${el}`,
+        `識別値：${idv}`,
+        `防御力：${defHint}`,
+        ...skills
+      ].concat(
+        window.SETTINGS?.identShowDrop
+          ? (e.dropItems || []).map(d => `${d.roll ?? ''}：${d.name ?? ''} ${d.price ?? ''} ×${d.count ?? ''}`)
+          : []
+      ).join('\n');
+      return body;
+    }
+
+    // ── 追加：総合チャットパレットの作成（プリセットの挿入位置を反映）
+    function buildCombinedCommands(e) {
+      const base = (e.chatPalette || '').trim();
+      const reacts = (e.reactions || []).join('\n').trim();
+      const presetText = (window.PRESET?.text || '').trim();
+      const pos = (window.PRESET?.pos || 'bottom'); // 'top' or 'bottom'
+      const joined = [base, reacts].filter(Boolean).join('\n').trim();
+      if (!presetText) return joined;
+      if (!joined) return presetText;
+      return pos === 'top' ? `${presetText}\n${joined}` : `${joined}\n${presetText}`;
+    }
+
+    // ── 追加：コマ情報を構築（常時更新用）
+    function buildKomaInfo(e) {
+      // ステータスのmaxはnullならnull
+      const statuses = (e.statuses || []).map(s => ({
+        label: String(s.label ?? ''),
+        value: (s.cur == null ? 0 : Number(s.cur)),
+        max: (s.max == null ? null : Number(s.max))
+      }));
+      const params = (e.params || []).map(p => ({
+        label: String(p.label ?? ''),
+        value: String(p.value ?? '')
+      }));
+
+      // 設定に応じて commands を構築（リアクション→ドロップ品の順）
+      const baseLines = (e.chatPalette || '').trim();
+      const reactLines = (e.reactions || []).map(s => {
+        const tag = (window.SETTINGS?.atReact || '').trim();
+        return tag ? `${s}@${tag}` : s;
+      }).join('\n').trim();
+
+      const dropLines = (e.dropItems || []).map(d => {
+        const line = `${d.roll ?? ''}：${d.name ?? ''} ${d.price ?? ''} ×${d.count ?? ''}`.trim();
+        const tag = (window.SETTINGS?.atDrop || '').trim();
+        return tag ? `${line}@${tag}` : line;
+      }).join('\n').trim();
+
+      let joined = [baseLines, reactLines, dropLines].filter(Boolean).join('\n').trim();
+
+      // 既存プリセット位置の反映（上 or 下）
+      const presetText = (window.PRESET?.text || '').trim();
+      const pos = (window.PRESET?.pos || 'bottom');
+      if (presetText) {
+        joined = (pos === 'top') ? `${presetText}\n${joined}` : `${joined}\n${presetText}`;
+      }
+
+      // 行動値に-0.1
+      const iniBase = Number(e.basic?.init || 0);
+      const initiative = (window.SETTINGS?.initMinus ? (iniBase - 0.1) : iniBase);
+
+      return {
+        kind: "character",
+        data: {
+          name: e.name || "",
+          memo: e.memo || "",
+          initiative,
+          status: statuses,
+          params: params,
+          secret: true,
+          invisible: false,
+          hideStatus: false,
+          commands: joined
+        }
+      };
+    }
+
+
+    // 置換：人が読みやすいテキスト出力
+    function buildText(e) {
+      const h = (e.kind === 'mob') ? '##' : '#';
+      const name = e.name || '';
+      const g = e.basic?.group || '';
+      const el = Number(e.basic?.el || 0);
+      const elm = (e.basic?.element ?? '');
+      const idv = Number(e.basic?.identify || 0);
+      const pdef = Number(e.basic?.pdef || 0);
+      const mdef = Number(e.basic?.mdef || 0);
+      const hp = Number(e.basic?.hp || 0);
+      const ini = Number(e.basic?.init || 0);
+      const mv = Number(e.basic?.moveM || 0);
+      const mvSq = Math.ceil(mv / 5);
+
+      // スキルは「チャットパレット欄」のもの
+      const skills = ((e.chatPalette || '').split('\n')
+        .map(s => s.trim()).filter(s => s.startsWith('《')));
+
+      const lines = [];
+      lines.push(`${h}${name}`);
+      lines.push(`分類：${g}、属性：${elm}、レベル：${el}`);
+      lines.push(`識別値：${idv}、防御力：${pdef}／${mdef}`);
+      lines.push(`HP：${hp}、行動値：${ini}、移動力：${mv}m=${mvSq}Sq`);
+      lines.push(`◎リアクション`);
+      if ((e.reactions || []).length) {
+        (e.reactions || []).forEach(r => {
+          // @rは文末の装飾なので見やすさ優先で外す
+          lines.push(`${String(r).replace(/@r\b/g, '').trim()}`);
+        });
+      }
+      lines.push(`◎メモ`);
+      if (e.memo) lines.push(e.memo);
+      lines.push(`◎スキル`);
+      if (skills.length) { skills.forEach(s => lines.push(`${s}`)); }
+      lines.push(`◎ドロップ品`);
+      if ((e.dropItems || []).length) {
+        (e.dropItems || []).forEach(d => {
+          lines.push(`${d.roll || '～'}：${d.name || ''} ${d.price || ''} ×${d.count || 1}`);
+        });
+      }
+      return lines.join('\n');
+    }
+
+    function buildKoma(e) {
+      // 簡易的なココフォリア用データ（最低限）
+      return {
+        kind: "character",
+        data: {
+          name: e.name,
+          memo: e.memo || "",
+          initiative: e.basic.init || 0,
+          externalUrl: "",
+          status: [
+            { label: "HP", value: e.basic.hp || 0, max: e.basic.hp || 0 },
+            { label: "MP", value: e.basic.mp || 0, max: e.basic.mp || 0 }
+          ],
+          commands: e.chatPalette || (e.reactions || []).join('\n')
+        }
+      };
+    }
+
+    function openPrint() { const e = getCurrent(); if (!e) { alert('まず編集対象を開いてね。'); return; } const w = window.open('', '_blank'); const head = '<!doctype html><meta charset="utf-8"><title>' + escapeHtml(e.name) + ' 印刷</title>' + '<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;padding:20px;line-height:1.6}table{width:100%;border-collapse:collapse}td{border:1px solid #ccc;padding:6px 8px;vertical-align:top}tr:nth-child(odd) td{background:#fafafa}pre{white-space:pre-wrap;margin:0}</style>'; const title = '<h1>' + escapeHtml(e.name) + '</h1>'; const rows = [['種別/分類/属性/EL', (e.kind === 'solo' ? 'ソロ' : 'モブ') + ' / ' + (e.basic.group || '-') + ' / ' + (e.basic.element || '-') + ' / EL:' + (e.basic.el || 0)], ['識別値', e.basic.identify || 0], ['HP/MP/行動', `${e.basic.hp || 0} / ${e.basic.mp || 0} / ${e.basic.init || 0}`], ['移動', `${e.basic.moveM || 0}m（${ceilDiv(e.basic.moveM || 0, 5)}Sq）`], ['物理/魔法防御', `${e.basic.pdef || 0} / ${e.basic.mdef || 0}`], ['リアクション', (e.reactions || []).join('\n') || '-'], ['ステータス', (e.statuses || []).map(s => `・${s.label}: ${s.cur}${s.max != null ? ` / ${s.max}` : ''}`).join('\n') || '-'], ['パラメータ', (e.params || []).map(p => `${p.label}: ${p.value}`).join(', ') || '-'], ['ドロップ品', (e.dropItems || []).map(d => `[${d.roll || '～'}] ${d.name || ''} ${d.price || ''} ×${d.count || 1}`).join('\n') || '-'], ['チャットパレット', e.chatPalette || '-'], ['メモ', e.memo || '-']]; const body = '<table>' + rows.map(([k, v]) => '<tr><td style="width:220px">' + escapeHtml(k) + '</td><td><pre>' + escapeHtml(String(v)) + '</pre></td></tr>').join('') + '</table>'; w.document.write(head); w.document.write(title); w.document.write(body); w.document.write('<script>window.print()<\\/script>'); w.document.close(); }
+
+    function syncSkillNameSL() {
+      const name = $('#sk_name');
+      const sl = $('#sk_sl');
+      const fix = () => {
+        const n = name.value.trim();
+        const s = num(sl.value, 0);
+        if (n === '《》' && s === 0) { name.value = ''; return; }
+        if (n === '' && s >= 1) { name.value = '《》'; return; }
+        if (s === 1 && n === '') { name.value = '《》'; }
+      };
+      name.addEventListener('input', fix);
+      sl.addEventListener('input', fix);
+    }
+
+    function skGather() {
+      return {
+        name: $('#sk_name').value.trim(),
+        sl: num($('#sk_sl').value, 0),
+        enable: $('#sk_enable').value.trim(),
+        power: $('#sk_power').value.trim(),
+        timing: $('#sk_timing').value.trim(),
+        range: $('#sk_range').value.trim(),
+        target: $('#sk_target').value.trim(),
+        prep: $('#sk_prep').value.trim(),
+        duration: $('#sk_duration').value.trim(),
+        limit: $('#sk_limit').value.trim(),
+        effect: $('#sk_effect').value
+      };
+    }
+    function skInsert() {
+      const v = skGather();
+      const left = [];
+      const right = [];
+      if (v.sl >= 2) { left.push(`${v.name || '《》'}${v.sl}：`); }
+      else if (v.sl === 0) { left.push(`${v.name || '《》'}：`); }
+      else if (v.sl === 1) { if (v.name && v.name !== '' && v.name !== '《》') { left.push(`${v.name}1：`); } }
+      if (v.enable) left.push(v.enable);
+      if (v.power) left.push(v.power);
+      if (v.timing) left.push(v.timing);
+      if (v.range) left.push(v.range);
+      if (v.target) left.push(v.target);
+      if (v.prep) left.push(v.prep);
+      let eff = v.effect || '';
+      if (v.duration) right.push(v.duration);
+      if (v.limit) right.push(v.limit);
+      const composed = left.join('') + eff + right.join(''); // スペース無しで連結
+      const converted = dictReplaceAll(composed);
+      $('#sk_effect').value = converted;
+      resetSkillInputs();
+    }
+    function resetSkillInputs() {
+      $('#sk_name').value = '《》';
+      $('#sk_sl').value = 1;
+      ['enable', 'power', 'timing', 'range', 'target', 'prep', 'duration', 'limit']
+        .forEach(id => { const el = $('#sk_' + id); if (el) el.value = ''; });
+    }
+    function skToChat() {
+      const eff = $('#sk_effect').value.trim(); if (!eff) return;
+      const ta = $('#chatPalette'); const prefix = ta.value && !ta.value.endsWith('\n') ? '\n' : '';
+      ta.value = (ta.value || '') + prefix + eff;
+      // ① 効果欄を空に戻す
+      $('#sk_effect').value = '';
+      touchUpdate();
+    }
+    function skToMemo() {
+      const eff = $('#sk_effect').value.trim(); if (!eff) return;
+      const ta = $('#memo'); const prefix = ta.value && !ta.value.endsWith('\n') ? '\n' : '';
+      ta.value = (ta.value || '') + prefix + eff;
+      // 効果欄を空に戻す
+      $('#sk_effect').value = '';
+      // 保存へ反映
+      const e = getCurrent(); if (e) { e.memo = ta.value; touchUpdate(); }
+    }
+
+    function updateMoveSq() { const m = Number($('#moveM').value || 0); $('#moveSq').textContent = `${Math.ceil(m / 5)} Sq`; }
+    $('#btnNew').addEventListener('click', newEnemy);
+    $('#btnDup').addEventListener('click', () => currentId ? duplicateEnemy(currentId) : alert('まず対象を開いてね。'));
+    $('#btnDel').addEventListener('click', deleteSelected);
+    $('#q').addEventListener('input', renderList);
+    $('#sortName').addEventListener('click', () => { sortMode = 'name'; renderList(); });
+    $('#sortLevel').addEventListener('click', () => { sortMode = 'level'; renderList(); });
+    $('#sortUpdated').addEventListener('click', () => { sortMode = 'updated'; renderList(); });
+    $('#addStatus').addEventListener('click', () => { const e = getCurrent(); if (!e) { alert('まず新規作成してね。'); return; } e.statuses = e.statuses || []; e.statuses.push({ label: null, cur: null, max: null }); renderStatusList(e.statuses); touchUpdate(); });
+    function syncStatusFromBasic(e) {
+      if (!e || !Array.isArray(e.statuses)) return;
+      const hp = Number(e.basic?.hp ?? 0);
+      const move = Number(e.basic?.moveM ?? 0);
+      const pdef = Number(e.basic?.pdef ?? 0);
+      const mdef = Number(e.basic?.mdef ?? 0);
+
+      e.statuses = e.statuses.map(s => {
+        const lbl = String(s.label || '').trim();
+        if (lbl === 'HP') { return { ...s, cur: hp, max: hp }; }
+        if (lbl === '移動') { return { ...s, cur: move, max: null }; }
+        if (lbl === '物理') { return { ...s, cur: pdef, max: null }; }
+        if (lbl === '魔法') { return { ...s, cur: mdef, max: null }; }
+        return s;
+      });
+    }
+
+    $('#syncStatus').addEventListener('click', () => {
+      const e = getCurrent();
+      if (!e) { alert('まず新規作成してね。'); return; }
+      syncStatusFromBasic(e);
+      renderStatusList(e.statuses);
+      touchUpdate();
+      alert('基本情報からステータスを更新したよ。');
+    });
+
+    $('#addParam').addEventListener('click', () => { const e = getCurrent(); if (!e) { alert('まず新規作成してね。'); return; } e.params = e.params || []; e.params.push({ label: '', value: '' }); renderParamList(e.params); touchUpdate(); });
+    $('#addReact').addEventListener('click', () => { const e = getCurrent(); if (!e) { alert('まず新規作成してね。'); return; } e.reactions = e.reactions || []; e.reactions.push(''); renderReactList(e.reactions); touchUpdate(); });
+    $('#addReactMnd').addEventListener('click', () => { const e = getCurrent(); if (!e) { alert('まず新規作成してね。'); return; } const X = Number(e.basic?.abl?.mnd || 0); const line = `${X}+2D>=? 精神リアクション`; e.reactions = e.reactions || []; e.reactions.push(line); renderReactList(e.reactions); touchUpdate(); });
+    $('#toggleAbility').addEventListener('click', () => { const el = $('#abilityWrap'); const open = el.style.display !== 'none'; el.style.display = open ? 'none' : 'block'; $('#toggleAbility').textContent = (open ? '▼' : '▲') + ' 能力（基本値/能力値）を' + (open ? '表示' : '隠す'); });
+    $('#sk_insert').addEventListener('click', skInsert);
+    $('#sk_to_chat').addEventListener('click', skToChat);
+    $('#sk_to_memo').addEventListener('click', skToMemo);
+    $('#addDrop').addEventListener('click', () => { const e = getCurrent(); if (!e) { alert('まず新規作成してね。'); return; } e.dropItems = e.dropItems || []; e.dropItems.push({ roll: '～', name: '', price: 'G', count: 1 }); renderDropList(e.dropItems); touchUpdate(); });
+
+    $('#list').addEventListener('click', (ev) => { const btn = ev.target.closest('button'); if (!btn) return; const id = btn.dataset.id; const act = btn.dataset.act; if (act === 'open') { const e = DB.enemies.find(x => x.id === id); if (e) openToForm(e); } else if (act === 'dup') { duplicateEnemy(id); } else if (act === 'del') { if (confirm('削除するよ、いい？')) { DB.enemies = DB.enemies.filter(x => x.id !== id); if (currentId === id) emptyToForm(); saveDB(DB); renderList(); } } });
+
+    $('#btnBackup').addEventListener('click', () => { const text = JSON.stringify(DB, null, 2); download(`enemies_backup_${new Date().toISOString().slice(0, 10)}.json`, text, 'application/json'); });
+    $('#fileRestore').addEventListener('change', (ev) => { const file = ev.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const data = JSON.parse(reader.result); if (!data || !Array.isArray(data.enemies)) throw new Error('形式が違うみたい。'); DB = data; saveDB(DB); renderList(); emptyToForm(); alert('復元したよ。'); } catch (e) { alert('復元に失敗：' + e.message) } }; reader.readAsText(file); ev.target.value = ''; });
+    // エネミー読み込み（エネミーjson出力形式：単体 or 配列）
+    // - 「このエネミーをjson出力（ファイル）」の単体オブジェクト
+    // - 「チェックをjson出力（ファイル）」の配列
+    // の両方に対応。idは新しく振り直して追加する。
+    document.getElementById('fileImportEnemies').addEventListener('change', (ev) => {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+
+          // 受け付ける形：
+          // 1) 単体オブジェクト { ..enemy.. }
+          // 2) 配列 [ {..enemy..}, ... ]
+          // 3)（おまけ対応）バックアップ形式 { enemies:[...] } が来たら enemies を読む
+          let arr;
+          if (Array.isArray(data)) {
+            arr = data;
+          } else if (data && Array.isArray(data.enemies)) {
+            arr = data.enemies;
+          } else if (data && typeof data === 'object') {
+            arr = [data];
+          } else {
+            throw new Error('エネミー配列/オブジェクトではないみたい。');
+          }
+
+          // 正規化して追加
+          const added = [];
+          arr.forEach(src => {
+            if (!src || typeof src !== 'object') return;
+            const e = JSON.parse(JSON.stringify(src)); // ディープコピー
+            // idは必ず振り直し
+            e.id = uid();
+            // 必須っぽい配列の型を保護
+            e.statuses = Array.isArray(e.statuses) ? e.statuses : [];
+            e.params = Array.isArray(e.params) ? e.params : [];
+            e.dropItems = Array.isArray(e.dropItems) ? e.dropItems : [];
+            // 便利系の付加情報は再構築しておく
+            try { e.identInfo = buildIdentInfo(e); } catch { }
+            try { e.komaInfo = buildKomaInfo(e); } catch { }
+            // タイムスタンプ
+            e.createdAt = nowISO();
+            e.updatedAt = nowISO();
+
+            DB.enemies.push(e);
+            added.push(e);
+          });
+
+          if (added.length === 0) throw new Error('追加できるエネミーが見つからなかった。');
+
+          saveDB(DB);
+          renderList();
+          alert(`エネミーを ${added.length} 件 追加したよ。`);
+
+        } catch (err) {
+          alert('読み込みに失敗：' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      ev.target.value = ''; // 同じファイルを続けて選んでも発火するように
+    });
+
+
+    // 保存／出力ボタン（⑥）
+    $('#btnSaveOver').addEventListener('click', () => { saveCurrent(); alert('上書き保存したよ。'); });
+    $('#btnSaveAs').addEventListener('click', () => {
+      const e = getCurrent(); if (!e) return alert('まず対象を開いてね。');
+      const name = prompt('新しい名前を入力してね：', e.name + '（コピー）'); if (!name) return;
+      const copy = JSON.parse(JSON.stringify(e)); copy.id = uid(); copy.name = name; copy.createdAt = nowISO(); copy.updatedAt = nowISO();
+      DB.enemies.push(copy); saveDB(DB); renderList(); openToForm(copy);
+      alert('名前を付けて保存したよ。');
+    });
+    $('#btnExportJsonOne').addEventListener('click', () => {
+      const e = getCurrent(); if (!e) return alert('まず対象を開いてね。');
+      // 常時更新の保証
+      e.identInfo = buildIdentInfo(e);
+      e.komaInfo = buildKomaInfo(e);
+      download(`${e.name}_enemy.json`, JSON.stringify(e, null, 2), 'application/json');
+    });
+    $('#btnExportTextOne').addEventListener('click', () => {
+      const e = getCurrent(); if (!e) return alert('まず対象を開いてね。');
+      // buildText は人向け出力（新フォーマット）
+      download(`${e.name}.txt`, buildText(e), 'text/plain');
+    });
+    // このエネミーをjson出力（クリップボード）
+    document.getElementById('btnExportJsonOneClip').addEventListener('click', async () => {
+      const e = getCurrent(); if (!e) return alert('まず対象を開いてね。');
+      // 出力前に再構築（識別／コマ）
+      e.identInfo = buildIdentInfo(e);
+      e.komaInfo = buildKomaInfo(e);
+      const text = JSON.stringify(e, null, 2);
+      try {
+        await navigator.clipboard.writeText(text);
+        alert('このエネミーのJSONをクリップボードにコピーしたよ。');
+      } catch (err) {
+        // クリップボードNGならファイル保存にフォールバック
+        download(`${e.name}_enemy.json`, text, 'application/json');
+        alert('クリップボードに書き込めなかったので、ファイルを保存したよ。');
+      }
+    });
+
+    $('#btnExportKoma').addEventListener('click', async () => {
+      const e = getCurrent(); if (!e) return alert('まず対象を開いてね。');
+      // 念のため直前で再構築
+      e.komaInfo = buildKomaInfo(e);
+      const text = JSON.stringify(e.komaInfo, null, 2);
+      try {
+        await navigator.clipboard.writeText(text);
+        alert('コマ情報をクリップボードにコピーしたよ。');
+      } catch (err) {
+        // 失敗時はダウンロードにフォールバック
+        download(`${e.name}_koma.json`, text, 'application/json');
+        alert('クリップボードに書き込めなかったので、ファイルを保存したよ。');
+      }
+    });
+
+    // 置換：チェックをjson出力（各エネミーに識別/コマを入れて出す）
+    $('#btnExportJsonSel').addEventListener('click', () => {
+      const ids = pickedIds(); if (ids.length === 0) return alert('チェックがないよ。');
+      const rows = DB.enemies
+        .filter(e => ids.includes(e.id))
+        .map(e => {
+          e.identInfo = buildIdentInfo(e);
+          e.komaInfo = buildKomaInfo(e);
+          return e;
+        });
+      download(`enemies_${ids.length}件.json`, JSON.stringify(rows, null, 2), 'application/json');
+    });
+
+    // 置換：チェックをテキスト出力（人向け出力を連結）
+    $('#btnExportTextSel').addEventListener('click', () => {
+      const ids = pickedIds(); if (ids.length === 0) return alert('チェックがないよ。');
+      const rows = DB.enemies
+        .filter(e => ids.includes(e.id))
+        .map(e => buildText(e))
+        .join('\n\n----\n\n');
+      download(`enemies_${ids.length}件.txt`, rows, 'text/plain');
+    });
+
+    // チェックをjson出力（クリップボード）
+    document.getElementById('btnExportJsonSelClip').addEventListener('click', async () => {
+      const ids = pickedIds(); if (ids.length === 0) return alert('チェックがないよ。');
+      const rows = DB.enemies
+        .filter(e => ids.includes(e.id))
+        .map(e => {
+          e.identInfo = buildIdentInfo(e);
+          e.komaInfo = buildKomaInfo(e);
+          return e;
+        });
+      const text = JSON.stringify(rows, null, 2);
+      try {
+        await navigator.clipboard.writeText(text);
+        alert(`チェック対象${ids.length}件のJSONをクリップボードにコピーしたよ。`);
+      } catch (err) {
+        download(`enemies_${ids.length}件.json`, text, 'application/json');
+        alert('クリップボードに書き込めなかったので、ファイルを保存したよ。');
+      }
+    });
+
+
+    // ==== Dictionary UI ====
+    const dictModal = $('#dictModal');
+    const dictList = $('#dictList');
+    $('#openDict').addEventListener('click', () => { renderDict(); dictModal.style.display = 'flex'; });
+    $('#closeDict').addEventListener('click', () => { dictModal.style.display = 'none'; });
+    dictModal.addEventListener('click', (e) => { if (e.target === dictModal) dictModal.style.display = 'none'; });
+
+    function renderDict() {
+      dictList.innerHTML = '';
+      (DICT.items || []).forEach((it, idx) => {
+        const row = document.createElement('div');
+        row.className = 'dict-row';
+        row.innerHTML = `
+      <input type="text" value="${escapeHtml(it.key)}" placeholder="語（例：ダメージ増加）" data-field="key">
+      <input type="text" value="${escapeHtml(it.val)}" placeholder="展開文" data-field="val">
+      <button class="btn danger" data-del>削除</button>`;
+        row.querySelectorAll('input').forEach(inp => {
+          inp.addEventListener('input', () => {
+            const f = inp.dataset.field;
+            DICT.items[idx][f] = inp.value;
+          });
+        });
+        row.querySelector('[data-del]').addEventListener('click', () => {
+          DICT.items.splice(idx, 1);
+          renderDict();
+          saveDict(DICT);
+        });
+        dictList.appendChild(row);
+      });
+    }
+    $('#dictAdd').addEventListener('click', () => {
+      DICT.items = DICT.items || [];
+      DICT.items.push({ key: '', val: '' });
+      renderDict();
+    });
+    $('#dictSave').addEventListener('click', () => {
+      DICT.items = (DICT.items || []).filter(x => (x.key || '').trim() !== '');
+      saveDict(DICT);
+      alert('辞書を保存したよ。');
+    });
+    $('#dictExport').addEventListener('click', () => {
+      download(`ar2e_dictionary_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(DICT, null, 2), 'application/json');
+    });
+    $('#dictImport').addEventListener('change', (ev) => {
+      const file = ev.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!data || !Array.isArray(data.items)) throw new Error('items配列がない');
+          DICT = data;
+          saveDict(DICT);
+          renderDict();
+          alert('インポート完了。');
+        } catch (err) {
+          alert('インポート失敗：' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      ev.target.value = '';
+    });
+
+    // ==== Preset UI ====
+    const presetModal = $('#presetModal');
+    $('#openPreset').addEventListener('click', () => {
+      // load current to UI
+      const pos = PRESET.pos || 'bottom';
+      $$('input[name="presetPos"]').forEach(r => r.checked = (r.value === pos));
+      $('#presetText').value = PRESET.text || '';
+      presetModal.style.display = 'flex';
+    });
+    $('#closePreset').addEventListener('click', () => presetModal.style.display = 'none');
+    presetModal.addEventListener('click', (e) => { if (e.target === presetModal) presetModal.style.display = 'none'; });
+    $('#presetSave').addEventListener('click', () => {
+      const pos = $$('input[name="presetPos"]:checked')[0]?.value || 'bottom';
+      const text = $('#presetText').value || '';
+      PRESET = { pos, text };
+      savePreset(PRESET);
+      alert('プリセットを保存したよ。');
+    });
+
+    // ==== Settings UI ====
+    const settingsModal = $('#settingsModal');
+    $('#openSettings').addEventListener('click', () => {
+      // 現在値をUIへ
+      $('#setInitMinus').checked = !!SETTINGS.initMinus;
+      $('#setIdentDrop').checked = !!SETTINGS.identShowDrop;
+      $('#setAtReact').value = SETTINGS.atReact || '';
+      $('#setAtDrop').value = SETTINGS.atDrop || '';
+      settingsModal.style.display = 'flex';
+    });
+    $('#closeSettings').addEventListener('click', () => settingsModal.style.display = 'none');
+    settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.style.display = 'none'; });
+    $('#settingsSave').addEventListener('click', () => {
+      SETTINGS = {
+        initMinus: !!$('#setInitMinus').checked,
+        identShowDrop: !!$('#setIdentDrop').checked,
+        atReact: ($('#setAtReact').value || '').trim(),
+        atDrop: ($('#setAtDrop').value || '').trim()
+      };
+      saveSettings(SETTINGS);
+      window.SETTINGS = SETTINGS;
+      alert('設定を保存したよ。');
+    });
+
+
+    // ==== Self Tests (visible toast) ====
+    function showToast(summary, details, ok) {
+      const toast = $('#testToast');
+      $('#testSummary').innerHTML = `<span class="${ok ? 'ok' : 'ng'}">${escapeHtml(summary)}</span>`;
+      const ul = $('#testDetails');
+      ul.innerHTML = '';
+      details.forEach(d => {
+        const li = document.createElement('li');
+        li.textContent = (d.pass ? '[PASS] ' : '[FAIL] ') + d.name + (d.info ? ` — ${d.info}` : '');
+        li.style.color = d.pass ? 'inherit' : 'var(--danger)';
+        ul.appendChild(li);
+      });
+      toast.style.display = 'block';
+      setTimeout(() => toast.style.display = 'none', 8000);
+    }
+
+    function selfTest() {
+      const results = [];
+      const assert = (name, cond, info = '') => results.push({ name, pass: !!cond, info });
+
+      // dictReplaceAll tests
+      let s1 = '対象に\\ダメージ増加\\を与える。';
+      let r1 = dictReplaceAll(s1);
+      assert('辞書：既知語を置換', r1.includes('ダメージ増加を行なう。'), r1);
+
+      let s2 = '未知語\\ナゾ語\\はそのまま。';
+      let r2 = dictReplaceAll(s2);
+      assert('辞書：未知語は素通し', /\\ナゾ語\\/.test(r2), r2);
+
+      // skill name/SL behavior
+      $('#sk_name').value = '《》'; $('#sk_sl').value = 0; $('#sk_name').dispatchEvent(new Event('input')); $('#sk_sl').dispatchEvent(new Event('input'));
+      assert('名称：《》かつSL=0で名称が空になる', $('#sk_name').value === '');
+
+      $('#sk_name').value = ''; $('#sk_sl').value = 2; $('#sk_sl').dispatchEvent(new Event('input'));
+      assert('名称：空でSL>=1なら《》になる', $('#sk_name').value === '《》');
+
+      // kind change handler test (mock confirm)
+      const e = { id: 't', name: 't', kind: 'mob', basic: {}, reactions: [], memo: 'モブエネミー' };
+      const oldConfirm = window.confirm;
+      let confirmCount = 0;
+      window.confirm = () => { confirmCount++; return true; }; // 2回（リアクション/メモ）呼ばれる想定
+      DB.enemies.push(e);
+      currentId = e.id;
+      $$('input[name="kind"]').forEach(r => r.checked = (r.value === 'solo'));
+      $$('input[name="kind"]').forEach(r => r.dispatchEvent(new Event('change')));
+      assert('種別切替：リアクション更新', e.reactions && e.reactions.length === 2 && /回避判定/.test(e.reactions[0]));
+      assert('種別切替：メモ更新', e.memo === 'ソロエネミー');
+      assert('種別切替：確認2回', confirmCount === 2, 'confirm回数=' + confirmCount);
+      DB.enemies = DB.enemies.filter(x => x.id !== 't');
+      window.confirm = oldConfirm;
+
+      const passCount = results.filter(r => r.pass).length;
+      const ok = passCount === results.length;
+      showToast(`${passCount}/${results.length} 件成功`, results, ok);
+    }
+    document.getElementById('runSelfTest').addEventListener('click', selfTest);
+
+    // ==== init ====
+    function updateMoveSq() { const m = Number($('#moveM').value || 0); $('#moveSq').textContent = `${Math.ceil(m / 5)} Sq`; }
+    function init() {
+      renderList();
+      emptyToForm();
+      bindBasicsSync();
+      bindAbilities();
+      ['group', 'element', 'enable', 'power', 'timing', 'range', 'target', 'prep', 'duration', 'limit'].forEach(key => {
+        const id = (key === 'group' || key === 'element') ? key : 'sk_' + key;
+        const el = document.getElementById(id);
+        if (el) makeAutocomplete(el, key);
+      });
+      window.addEventListener('keydown', (e) => { if (e.target.matches('input,textarea,select')) return; if (e.key.toLowerCase() === 'n') { newEnemy(); } if (e.key.toLowerCase() === 'd') { if (currentId) duplicateEnemy(currentId); } if (e.key === 'Delete' || (e.key === 'Backspace' && (e.metaKey || e.ctrlKey))) { deleteSelected(); } });
+    }
+    init();
+
+    function seedSample() {
+      return [
+        { id: uid(), name: 'ポピー', tags: ['花畑'], kind: 'mob', basic: { group: '植物', element: '地', el: 99, identify: 150, pdef: 30, mdef: 60, hp: 9998, mp: 1200, init: 50, moveM: 88, ablBase: { str: 99, dex: 102, agi: 105, int: 108, sen: 111, mnd: 114, luk: 999 }, abl: { str: 33, dex: 34, agi: 35, int: 36, sen: 37, mnd: 38, luk: 333 } }, reactions: defaultReactions('mob'), statuses: [], params: [], dropItems: [], chatPalette: '', memo: 'モブエネミー', createdAt: nowISO(), updatedAt: nowISO() }
+      ];
+    }
+  </script>
+</body>
+
+</html>

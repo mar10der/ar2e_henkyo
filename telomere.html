@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>エネミー管理ツール</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            /* 余裕があれば */
+            margin: 0;
+            font-family: sans-serif;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+            letter-spacing: .5px;
+            flex: 1
+        }
+
+        header h1 .rights {
+            font-size: 14px;
+            font-weight: 400;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+
+        #workarea {
+            display: flex;
+            flex: 1;
+            /* ヘッダー以外を占有 */
+            min-height: 0;
+            /* 子のoverflow動作のため */
+        }
+
+        #menu {
+            width: 50px;
+            background: #eee;
+            padding: 1em;
+        }
+
+        #boards {
+            display: flex;
+            overflow-x: auto;
+            flex-grow: 1;
+            padding: 1em;
+            gap: 1em;
+        }
+
+        .board {
+            background: #fff;
+            border: 1px solid #aaa;
+            padding: 1em;
+            width: 250px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .name-row {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .name-row input {
+            width: 95%;
+            text-align: center;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 0.5em;
+        }
+
+        .info-left {
+            display: flex;
+            gap: 0.5em;
+        }
+
+        .info-left input {
+            width: 40px;
+        }
+
+        .section {
+            margin-top: 0.5em;
+        }
+
+        .drag-handle {
+            cursor: grab;
+            text-align: center;
+            background: #ccc;
+            padding: 0.3em;
+            font-weight: bold;
+            user-select: none;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5em;
+            align-items: center;
+            margin-bottom: 0.3em;
+            text-align: center;
+        }
+
+        .grid label {
+            text-align: center;
+            padding-right: 0.3em;
+        }
+
+        .grid input,
+        .grid button {
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .tools {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5em;
+            margin: 0.5em 0;
+        }
+
+        .hp-box {
+            text-align: center;
+            margin-top: 0.5em;
+        }
+
+        .hp-box input {
+            width: 100px;
+        }
+
+        .hp-now {
+            font-size: 2.0em;
+        }
+
+        .history {
+            margin-top: 0.5em;
+            border-top: 1px solid #ccc;
+            padding-top: 0.5em;
+        }
+
+        .history-row {
+            display: flex;
+            gap: 0.5em;
+            align-items: center;
+            margin-top: 0.3em;
+        }
+
+        button.danger {
+            background: #d93025;
+            color: #fff;
+            border: none;
+        }
+
+        button.danger:hover {
+            filter: brightness(0.95);
+        }
+
+        /* modal */
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .modal-inner {
+            background: #fff;
+            width: min(520px, 92vw);
+            max-height: 80vh;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-body {
+            padding: 8px 12px;
+            overflow: auto;
+        }
+
+        .modal-footer {
+            padding: 10px 12px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        button.icon {
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .save-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .save-list li {
+            padding: 8px 10px;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            margin: 6px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .save-list li:hover {
+            background: #f7f7f7;
+        }
+
+        .save-list li.selected {
+            outline: 2px solid #4a90e2;
+            background: #eef5ff;
+        }
+
+        .save-list .meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .save-list .row-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+
+        select,
+        input[type=number],
+        input[type=text] {
+            font-size: 1em;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+</head>
+
+<body>
+    <header>
+        <h1>AR2Eエネミーボード
+            <span class="rights">本作は、「著：菊池たけし／F.E.A.R」が権利を有する『アリアンロッドRPG2E』の二次創作作品です。(C)F.E.A.R. 「アリアンロッドRPG 2E」</span>
+        </h1>
+    </header>
+
+    <div id="workarea">
+        <div id="menu">
+            <button onclick="addBoard()">追加</button>
+            <button onclick="importFromClipboard()">貼付</button>
+            <button onclick="exportToClipboard()">出力</button>
+            <button onclick="saveBoardsPrompt()">保存</button>
+            <button onclick="openLoadDialog()">読込</button>
+            <button class="danger" onclick="deleteAllBoards()">削除</button>
+
+
+        </div>
+        <div id="boards"></div>
+    </div>
+    <!-- 読み込みモーダル -->
+    <div id="load-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="load-modal-title">
+        <div class="modal-inner">
+            <div class="modal-head">
+                <h3 id="load-modal-title">保存した盤面を選択</h3>
+                <button class="icon" onclick="closeLoadDialog()" aria-label="閉じる">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- 一覧は単純なリストで -->
+                <ul id="load-list" class="save-list" tabindex="0" aria-label="保存一覧"></ul>
+            </div>
+            <div class="modal-footer">
+                <button onclick="confirmLoadSelected()">読み込み</button>
+                <button onclick="closeLoadDialog()">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let boardId = 0;
+        let initDefVisible = true;
+
+
+        // ボード追加
+        function addBoard() {
+            const id = `board-${boardId++}`;
+            const board = document.createElement('div');
+            board.className = 'board';
+            board.dataset.hp = 0;
+            board.dataset.ident = '';
+            board.dataset.koma = '';
+            board.innerHTML = `
+            
+        <div class="drag-handle">≡</div>
+        <div class="name-row">
+          <input type="text" placeholder="名前">
+        </div>
+        <div class="info-row">
+          <div class="info-left">
+            <input type="text" placeholder="分類">
+            <input type="text" placeholder="属性">
+          </div>
+          <div>
+            <button onclick="removeBoard(this.parentNode.parentNode.parentNode)">✖</button>
+            <button onclick="toggleBoardFields(this)">隠す</button>
+            <button onclick="duplicateBoard(this)">複製</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="grid">
+            ${['物理', '魔法', '貫通', 'ロス'].map(type => `<input type="number" class="dmg-input" data-type="${type}" placeholder="0">`).join('')}
+          </div>
+          <div class="grid">
+            ${['物理', '魔法', '貫通', 'ロス'].map(type => `<button onclick="registerDamage(this, '${type}')">${type}</button>`).join('')}
+          </div>
+          <div class="grid">
+            ${['物理', '魔法', '貫通', 'ロス'].map(type => `<input type="number" class="cur-def" data-type="${type}" placeholder="現在" value="0">`).join('')}
+          </div>
+          <div class="grid">
+            ${['物理', '魔法', '貫通', 'ロス'].map(type => `<input type="number" class="init-def" data-type="${type}" placeholder="初期" value="0">`).join('')}
+          </div>
+        </div>
+
+        <div class="tools">
+            <button onclick="copyIdent(this)">識別</button>
+            <button onclick="copyKoma(this)">コマ</button>
+            <button onclick="clearHistoryAll(this)">履歴消</button>
+        </div>
+
+
+
+        <div class="hp-box">
+          <div class="hp-now-row"><span class="hp-now">0</span></div>
+          <div class="hp-max-row"><input type="number" placeholder="最大HP" onchange="setMaxHP(this)"></div>
+        </div>
+        <div class="history"></div>
+      `;
+            const dmgInputs = board.querySelectorAll('.dmg-input');
+            dmgInputs.forEach(input => {
+                input.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') {
+                        const type = input.dataset.type;
+                        registerDamage({ closest: input.closest.bind(input) }, type); // input 要素を使って registerDamage を呼ぶ
+                    }
+                });
+            });
+
+            document.getElementById('boards').appendChild(board);
+            board.dataset.ident = ''; // 識別情報（新規は空）
+            board.dataset.koma = ''; // コマ情報（新規は空）
+
+        }
+
+        // ボード削除
+        function removeBoard(board) {
+            board.remove();
+        }
+
+
+        //詳細表示機能
+        function toggleBoardFields(button) {
+            const board = button.closest('.board');
+            const initDefs = board.querySelectorAll('.init-def');
+            const maxHpRow = board.querySelector('.hp-max-row');
+            const tools = board.querySelector('.tools');
+
+            // 状態保存（ボードごと）
+            const visible = board.dataset.fieldsVisible !== 'false'; // 初期値 true
+
+            initDefs.forEach(el => {
+                el.style.display = visible ? 'none' : 'inline-block';
+            });
+            if (maxHpRow) {
+                maxHpRow.style.display = visible ? 'none' : 'block';
+            }
+            if (tools) tools.style.display = visible ? 'none' : 'grid';
+
+            board.dataset.fieldsVisible = (!visible).toString();
+
+            button.textContent = visible ? '詳細' : '隠す';
+        }
+
+        function setMaxHP(input) {
+            const board = input.closest('.board');
+            const now = board.querySelector('.hp-now');
+            now.textContent = input.value;
+            board.dataset.hp = input.value;
+        }
+
+        function registerDamage(button, type) {
+            const board = button.closest('.board');
+            const dmgInput = board.querySelector(`.dmg-input[data-type='${type}']`);
+            const curDefInput = board.querySelector(`.cur-def[data-type='${type}']`);
+            const damage = parseInt(dmgInput.value);
+            const curDef = parseInt(curDefInput.value);
+            if (isNaN(damage) || isNaN(curDef)) return;
+
+            const history = board.querySelector('.history');
+            const histRow = document.createElement('div');
+            histRow.className = 'history-row';
+            histRow.innerHTML = `
+        <input type="number" value="${curDef}" style="width:40px">
+        <select>
+          <option${type === '物理' ? ' selected' : ''}>物理</option>
+          <option${type === '魔法' ? ' selected' : ''}>魔法</option>
+          <option${type === '貫通' ? ' selected' : ''}>貫通</option>
+          <option${type === 'ロス' ? ' selected' : ''}>ロス</option>
+        </select>
+        <input type="number" value="${damage}" style="width:60px">
+        <button onclick="removeHistoryRow(this)">✖</button>
+      `;
+            history.prepend(histRow);
+            dmgInput.value = '';
+
+
+            const inputs = histRow.querySelectorAll('input, select');
+            inputs.forEach(el => {
+                el.addEventListener('change', () => recalculateHP(board));  // 値が変わってフォーカスが外れた時
+            });
+            recalculateHP(board);
+        }
+
+        // HP計算
+        function recalculateHP(board) {
+            const maxHpInput = board.querySelector('.hp-max-row input');
+            const maxHp = parseInt(maxHpInput.value);
+            if (isNaN(maxHp)) return;
+
+            const historyRows = board.querySelectorAll('.history-row');
+            let totalDamage = 0;
+
+            historyRows.forEach(row => {
+                const curDef = parseInt(row.children[0].value); // 最初のinput
+                const type = row.children[1].value;
+                const damage = parseInt(row.children[2].value); // 3つ目のinput
+
+                if (!isNaN(damage) && !isNaN(curDef)) {
+                    const diff = damage - curDef;
+                    const effectiveDamage = (type === 'ロス') ? diff : Math.max(0, diff);
+                    totalDamage += effectiveDamage;
+                }
+            });
+
+            const currentHp = Math.max(0, maxHp - totalDamage);
+            board.dataset.hp = currentHp;
+            board.querySelector('.hp-now').textContent = currentHp;
+        }
+
+        // ダメージ歴を削除
+        function removeHistoryRow(button) {
+            const board = button.closest('.board');
+            button.parentNode.remove(); // history-row を削除
+            recalculateHP(board);       // 再計算
+        }
+        new Sortable(document.getElementById('boards'), {
+            animation: 150,
+            handle: '.drag-handle',
+        });
+
+
+        // エネミーボード複製
+        function duplicateBoard(button) {
+            const original = button.closest('.board');
+            const clone = original.cloneNode(true);
+            const newId = `board-${boardId++}`;
+            clone.dataset.hp = original.dataset.hp;
+
+            // 名前処理
+            const originalNameInput = original.querySelector('.name-row input');
+            const originalName = (originalNameInput?.value ?? '').trim();
+            const nameBase = originalName.replace(/\(\d+\)$/, ''); // (数字) を外した名前
+
+            // 同じ基礎名を持つ全ボードを取得して最大番号を探す
+            let maxNum = 0;
+            document.querySelectorAll('.board .name-row input').forEach(input => {
+                const name = (input.value ?? '').trim();
+                const m = name.match(/^(.*?)(?:\((\d+)\))?$/);
+                if (m && m[1] === nameBase) {
+                    const num = m[2] ? parseInt(m[2], 10) : 0;
+                    if (num > maxNum) maxNum = num;
+                }
+            });
+
+            // 最大値+1を新しい番号に
+            const newName = `${nameBase}(${maxNum + 1})`;
+
+            // 複製側に新しい名前をセット
+            const cloneNameInput = clone.querySelector('.name-row input');
+            if (cloneNameInput) cloneNameInput.value = newName;
+
+            // HPや最大HPのコピー
+            clone.querySelector('.hp-now').textContent = original.querySelector('.hp-now').textContent;
+            clone.querySelector('.hp-max-row input').value = original.querySelector('.hp-max-row input').value;
+
+            // dmg-input の Enter イベント再設定
+            clone.querySelectorAll('.dmg-input').forEach(input => {
+                input.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') {
+                        const type = input.dataset.type;
+                        registerDamage({ closest: input.closest.bind(input) }, type);
+                    }
+                });
+            });
+
+            // history-row の change / 削除イベント再バインド
+            clone.querySelectorAll('.history-row').forEach(row => {
+                row.querySelectorAll('input, select').forEach(el => {
+                    el.addEventListener('change', () => recalculateHP(clone));
+                });
+                row.querySelector('button').onclick = function () {
+                    removeHistoryRow(this);
+                };
+            });
+
+            // 複製元の次に挿入
+            const parent = original.parentNode;
+            if (original.nextSibling) {
+                parent.insertBefore(clone, original.nextSibling);
+            } else {
+                parent.appendChild(clone);
+            }
+
+            recalculateHP(clone);
+        }
+
+
+
+
+        // クリップボードから読み取り
+        async function importFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                const raw = JSON.parse(text);
+
+                // 何が来ても最終的に「内部形式の配列」に正規化
+                const enemies = normalizeEnemiesFromAny(raw);
+
+                if (!Array.isArray(enemies)) {
+                    alert('無効な形式：正規化に失敗しました');
+                    return;
+                }
+                enemies.forEach(enemy => addBoardFromData(enemy));
+            } catch (e) {
+                alert('読み取りまたは解析に失敗しました\n' + e.message);
+            }
+        }
+
+        /** どんなJSONでも内部形式[{...}]に正規化する */
+        function normalizeEnemiesFromAny(input) {
+            // すでに内部形式（配列で、name/maxHp/defensesなどを持つ）ならそのまま
+            if (Array.isArray(input) && input.every(isInternalEnemyLike)) {
+                return input;
+            }
+
+            // 配列だけど内部形式じゃない：各要素を個別に変換を試みる
+            if (Array.isArray(input)) {
+                const converted = input.map(tryConvertOne).filter(Boolean);
+                return converted.length ? converted : null;
+            }
+
+            // 単一オブジェクト：他ツール想定（フォルネウス形式など）
+            const one = tryConvertOne(input);
+            return one ? [one] : null;
+        }
+
+        function isInternalEnemyLike(obj) {
+            return obj && typeof obj === 'object' &&
+                ('name' in obj) &&
+                ('maxHp' in obj) &&
+                ('defenses' in obj);
+        }
+
+        /** 要素1つを内部形式に変換する（成功時オブジェクト、失敗時null） */
+        function tryConvertOne(obj) {
+            if (!obj || typeof obj !== 'object') return null;
+
+            // すでに内部形式ならそのまま返す
+            if (isInternalEnemyLike(obj)) return obj;
+
+            if ('basic' in obj || 'statuses' in obj || 'identInfo' in obj || 'komaInfo' in obj) {
+                const name =
+                    obj.name ||
+                    obj.basic?.name ||
+                    obj.komaInfo?.data?.name ||
+                    obj.id ||
+                    '';
+
+                const category =
+                    obj.basic?.group || obj.kind || obj.basic?.type || '';
+
+                const element =
+                    obj.basic?.element ?? obj.basic?.elem ?? '-';
+
+                // 最大HPは basic.hp or statuses の HP(max/cur) から推定
+                let maxHp = 0;
+                if (typeof obj.basic?.hp === 'number') {
+                    maxHp = obj.basic.hp;
+                } else {
+                    const hpStat = (obj.statuses || []).find(s => s.bind === 'hp' || s.label === 'HP');
+                    if (hpStat) maxHp = Number(hpStat.max ?? hpStat.cur ?? 0);
+                }
+
+                // 防御：物理= pdef, 魔法= mdef、貫通/ロスは0で初期化
+                const pdef =
+                    typeof obj.basic?.pdef === 'number'
+                        ? obj.basic.pdef
+                        : ((obj.statuses || []).find(s => s.bind === 'pdef' || s.label === '物理')?.cur ?? 0);
+
+                const mdef =
+                    typeof obj.basic?.mdef === 'number'
+                        ? obj.basic.mdef
+                        : ((obj.statuses || []).find(s => s.bind === 'mdef' || s.label === '魔法')?.cur ?? 0);
+
+                const defenses = {
+                    '物理': Number(pdef) || 0,
+                    '魔法': Number(mdef) || 0,
+                    '貫通': 0,
+                    'ロス': 0,
+                };
+
+                const initDefenses = { ...defenses };
+
+                // 識別・コマ情報は dataset に入れる前提：文字列が望ましいので整形
+                const ident = typeof obj.identInfo === 'string'
+                    ? obj.identInfo
+                    : (obj.identInfo ? JSON.stringify(obj.identInfo) : '');
+
+                // koma は常に文字列で持つ
+                const koma = obj.komaInfo ? JSON.stringify(obj.komaInfo) : '';
+
+
+                // 履歴は不明なので空
+                const history = [];
+
+                return {
+                    name,
+                    category,
+                    element,
+                    maxHp,
+                    defenses,
+                    initDefenses,
+                    history,
+                    ident,
+                    koma,
+                };
+            }
+
+            // 他の未知形式もここで必要に応じて分岐追加可能
+            return null;
+        }
+
+
+        // エネミーボード追加
+        function addBoardFromData(enemy) {
+            const id = `board-${boardId++}`;
+            const board = document.createElement('div');
+            board.className = 'board';
+            board.dataset.hp = enemy.maxHp ?? 0;
+            board.dataset.ident = enemy.ident ?? '';
+            board.dataset.koma = enemy.koma ?? '';
+
+
+            board.innerHTML = `
+    <div class="drag-handle">≡</div>
+    <div class="name-row">
+        <input type="text" placeholder="名前" value="${enemy.name || ''}">
+    </div>
+    <div class="info-row">
+        <div class="info-left">
+            <input type="text" placeholder="分類" value="${enemy.category || ''}">
+            <input type="text" placeholder="属性" value="${enemy.element || ''}">
+        </div>
+        <div>
+            <button onclick="removeBoard(this.parentNode.parentNode.parentNode)">✖</button>
+            <button onclick="toggleBoardFields(this)">隠す</button>
+            <button onclick="duplicateBoard(this)">複製</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="grid">
+            ${['物理', '魔法', '貫通', 'ロス'].map(type =>
+                `<input type="number" class="dmg-input" data-type="${type}" placeholder="0">`
+            ).join('')}
+        </div>
+        <div class="grid">
+            ${['物理', '魔法', '貫通', 'ロス'].map(type =>
+                `<button onclick="registerDamage(this, '${type}')">${type}</button>`
+            ).join('')}
+        </div>
+        <div class="grid">
+            ${['物理', '魔法', '貫通', 'ロス'].map(type =>
+                `<input type="number" class="cur-def" data-type="${type}" placeholder="現在"
+                value="${enemy.defenses?.[type] ?? 0}">`
+            ).join('')}
+        </div>
+        <div class="grid">
+            ${['物理', '魔法', '貫通', 'ロス'].map(type =>
+                `<input type="number" class="init-def" data-type="${type}" placeholder="初期"
+                value="${enemy.initDefenses?.[type] ?? 0}">`
+            ).join('')}
+        </div>
+    </div>
+
+    <div class="tools">
+        <button onclick="copyIdent(this)">識別</button>
+        <button onclick="copyKoma(this)">コマ</button>
+        <button onclick="clearHistoryAll(this)">履歴消</button>
+    </div>
+
+
+    <div class="hp-box">
+        <div class="hp-now-row"><span class="hp-now">${enemy.maxHp ?? 0}</span></div>
+        <div class="hp-max-row"><input type="number" placeholder="最大HP" value="${enemy.maxHp ?? 0}"
+                onchange="setMaxHP(this)"></div>
+    </div>
+    <div class="history"></div>
+    `;
+
+            // dmg-input Enter 対応
+            board.querySelectorAll('.dmg-input').forEach(input => {
+                input.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') {
+                        const type = input.dataset.type;
+                        registerDamage({ closest: input.closest.bind(input) }, type);
+                    }
+                });
+            });
+
+            // history 行の追加
+            const history = board.querySelector('.history');
+            (enemy.history || []).forEach(entry => {
+                const row = document.createElement('div');
+                row.className = 'history-row';
+                row.innerHTML = `
+    <input type="number" value="${entry.curDef ?? 0}" style="width:40px">
+    <select>
+        ${['物理', '魔法', '貫通', 'ロス'].map(type =>
+                    `<option${entry.type === type ? ' selected' : ''}>${type}</option>`
+                ).join('')}
+    </select>
+    <input type="number" value="${entry.damage ?? 0}" style="width:60px">
+    <button onclick="removeHistoryRow(this)">✖</button>
+    `;
+                row.querySelectorAll('input, select').forEach(el => {
+                    el.addEventListener('change', () => recalculateHP(board));
+                });
+                history.appendChild(row);
+            });
+
+            document.getElementById('boards').appendChild(board);
+            recalculateHP(board);
+            toggleBoardFields(board.querySelector("button[onclick^='toggleBoardFields']"));
+
+            board.dataset.ident = enemy.ident ?? '';
+            board.dataset.koma = enemy.koma ?? '';
+
+
+        }
+
+
+        // 出力
+        function exportToClipboard() {
+            const boards = document.querySelectorAll('.board');
+            const data = [];
+
+            boards.forEach(board => {
+                const name = board.querySelector('.name-row input')?.value || '';
+                const category = board.querySelector('.info-left input:nth-child(1)')?.value || '';
+                const element = board.querySelector('.info-left input:nth-child(2)')?.value || '';
+                const maxHp = parseInt(board.querySelector('.hp-max-row input')?.value) || 0;
+
+                const defenses = {};
+                const initDefenses = {};
+
+                board.querySelectorAll('.cur-def').forEach(input => {
+                    defenses[input.dataset.type] = parseInt(input.value) || 0;
+                });
+
+                board.querySelectorAll('.init-def').forEach(input => {
+                    initDefenses[input.dataset.type] = parseInt(input.value) || 0;
+                });
+
+                const history = [];
+                board.querySelectorAll('.history-row').forEach(row => {
+                    const curDef = parseInt(row.children[0].value) || 0;
+                    const type = row.children[1].value;
+                    const damage = parseInt(row.children[2].value) || 0;
+                    history.push({ type, damage, curDef });
+                });
+
+                const ident = board.dataset.ident || '';
+                const koma = board.dataset.koma || '';
+
+                data.push({
+                    name,
+                    category,
+                    element,
+                    maxHp,
+                    defenses,
+                    initDefenses,
+                    history,
+                    ident,
+                    koma
+                });
+            });
+
+            const json = JSON.stringify(data, null, 2);
+
+            navigator.clipboard.writeText(json).then(() => {
+                alert('コピーしました');
+            }).catch(err => {
+                alert('コピーに失敗しました\n' + err.message);
+            });
+        }
+
+        // 識別情報をクリップボードへ
+        function copyIdent(button) {
+            const board = button.closest('.board');
+            const text = board.dataset.ident || '';
+            navigator.clipboard.writeText(text)
+                .then(() => alert('識別情報をコピーしました'))
+                .catch(e => alert('コピーに失敗しました\n' + e.message));
+        }
+
+        // コマ情報をクリップボードへ
+        function copyKoma(button) {
+            const board = button.closest('.board');
+            const text = board.dataset.koma || '';
+            navigator.clipboard.writeText(text)
+                .then(() => alert('コマ情報をコピーしました'))
+                .catch(e => alert('コピーに失敗しました\n' + e.message));
+        }
+
+        // 履歴全消し + HP再計算
+        function clearHistoryAll(button) {
+            const board = button.closest('.board');
+            board.querySelectorAll('.history-row').forEach(row => row.remove());
+            recalculateHP(board);
+        }
+
+        // --- 永続化ユーティリティ ---
+        const LS_KEY = 'ar2e_enemy_saves';
+        function getSaves() {
+            try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { return {}; }
+        }
+        function setSaves(obj) { localStorage.setItem(LS_KEY, JSON.stringify(obj)); }
+
+        function collectAllBoards() {
+            const boards = document.querySelectorAll('.board');
+            const data = [];
+            boards.forEach(board => {
+                const name = board.querySelector('.name-row input')?.value || '';
+                const category = board.querySelector('.info-left input:nth-child(1)')?.value || '';
+                const element = board.querySelector('.info-left input:nth-child(2)')?.value || '';
+                const maxHp = parseInt(board.querySelector('.hp-max-row input')?.value) || 0;
+
+                const defenses = {}, initDefenses = {};
+                board.querySelectorAll('.cur-def').forEach(i => defenses[i.dataset.type] = parseInt(i.value) || 0);
+                board.querySelectorAll('.init-def').forEach(i => initDefenses[i.dataset.type] = parseInt(i.value) || 0);
+
+                const history = [];
+                board.querySelectorAll('.history-row').forEach(row => {
+                    const curDef = parseInt(row.children[0].value) || 0;
+                    const type = row.children[1].value;
+                    const damage = parseInt(row.children[2].value) || 0;
+                    history.push({ type, damage, curDef });
+                });
+
+                const ident = board.dataset.ident || '';
+                const koma = board.dataset.koma || '';
+
+                data.push({ name, category, element, maxHp, defenses, initDefenses, history, ident, koma });
+            });
+            return data;
+        }
+
+        // --- 保存：promptで名前入力して保存 ---
+        function saveBoardsPrompt() {
+            const data = collectAllBoards();
+            if (!data.length) { alert('保存するボードがありません'); return; }
+
+            const defaultName = data[0]?.name ? `${data[0].name} 他${Math.max(0, data.length - 1)}` : '';
+            let name = (window.prompt('保存名を入力してね', defaultName) || '').trim();
+            if (!name) { return; }
+
+            const saves = getSaves();
+            if (saves[name] && !confirm(`「${name}」を上書きします。よい？`)) return;
+
+            // ついでに更新日時メタ付け（表示用）
+            const meta = { updatedAt: new Date().toISOString(), count: data.length };
+            saves[name] = { meta, data };
+            setSaves(saves);
+            alert(`保存しました：${name}`);
+        }
+
+        // --- 読込：モーダルを開いて選択して読み込み ---
+        function openLoadDialog() {
+            const modal = document.getElementById('load-modal');
+            const list = document.getElementById('load-list');
+            const saves = getSaves();
+            list.innerHTML = '';
+
+            const names = Object.keys(saves).sort((a, b) => a.localeCompare(b, 'ja'));
+            if (!names.length) {
+                list.innerHTML = '<li>(保存はまだありません)</li>';
+            } else {
+                names.forEach(n => {
+                    const li = document.createElement('li');
+                    li.dataset.key = n;
+
+                    const left = document.createElement('div');
+                    const title = document.createElement('div');
+                    title.textContent = n;
+
+                    const meta = document.createElement('div');
+                    meta.className = 'meta';
+                    const m = saves[n].meta || {};
+                    const count = m.count ?? (Array.isArray(saves[n]) ? saves[n].length : (saves[n].data?.length || 0));
+                    const when = m.updatedAt ? new Date(m.updatedAt).toLocaleString() : '';
+                    meta.textContent = when ? `${when} / ${count}体` : `${count}体`;
+
+                    left.appendChild(title);
+                    left.appendChild(meta);
+
+                    const right = document.createElement('div');
+                    right.className = 'row-actions';
+                    const btnLoad = document.createElement('button');
+                    btnLoad.textContent = '読み込み';
+                    btnLoad.onclick = () => { selectListItem(li); confirmLoadSelected(); };
+                    const btnDel = document.createElement('button');
+                    btnDel.textContent = '保存削除';
+                    btnDel.onclick = () => { deleteOneSave(n); };
+
+                    right.appendChild(btnLoad);
+                    right.appendChild(btnDel);
+
+                    li.appendChild(left);
+                    li.appendChild(right);
+
+                    li.addEventListener('click', () => selectListItem(li));
+                    li.addEventListener('dblclick', () => { selectListItem(li); confirmLoadSelected(); });
+
+                    list.appendChild(li);
+                });
+            }
+
+            modal.classList.remove('hidden');
+            // 初期選択
+            const firstItem = list.querySelector('li[data-key]');
+            if (firstItem) selectListItem(firstItem);
+        }
+        function closeLoadDialog() {
+            document.getElementById('load-modal').classList.add('hidden');
+        }
+        function selectListItem(li) {
+            const list = document.getElementById('load-list');
+            list.querySelectorAll('li').forEach(x => x.classList.remove('selected'));
+            li.classList.add('selected');
+        }
+        function getSelectedSaveKey() {
+            const sel = document.querySelector('#load-list li.selected');
+            return sel?.dataset.key || '';
+        }
+        function confirmLoadSelected() {
+            const key = getSelectedSaveKey();
+            if (!key) return;
+            const saves = getSaves();
+            const entry = saves[key];
+
+            const arr = Array.isArray(entry) ? entry : entry?.data;
+            if (!Array.isArray(arr)) { alert('保存データが壊れています'); return; }
+
+            arr.forEach(enemy => addBoardFromData(enemy));
+            closeLoadDialog();
+        }
+        function deleteOneSave(key) {
+            if (!confirm(`保存「${key}」を削除します。よい？`)) return;
+            const saves = getSaves();
+            delete saves[key];
+            setSaves(saves);
+            // 再描画
+            openLoadDialog();
+        }
+
+        // --- 全削除（画面上のボードだけ） ---
+        function deleteAllBoards() {
+            if (!confirm('画面上の全ボードを削除します。よい？（保存データは消えません）')) return;
+            document.querySelectorAll('.board').forEach(b => b.remove());
+        }
+
+        // Escでモーダル閉じ、Enterで読み込み
+        document.addEventListener('keydown', (e) => {
+            const modalOpen = !document.getElementById('load-modal').classList.contains('hidden');
+            if (!modalOpen) return;
+            if (e.key === 'Escape') closeLoadDialog();
+            if (e.key === 'Enter') confirmLoadSelected();
+        });
+
+
+
+
+    </script>
+</body>
+
+</html>
