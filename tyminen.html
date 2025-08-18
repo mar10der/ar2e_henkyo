@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>AR2Eキャラコマツール</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 1em;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+            letter-spacing: .5px;
+            flex: 1
+        }
+
+        header h1 .rights {
+            font-size: 14px;
+            font-weight: 400;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+
+        .layer {
+            display: flex;
+            align-items: center;
+            margin: 4px 0;
+        }
+
+        .folder {
+            background: #e0f0ff;
+            padding: 6px;
+        }
+
+        .folder[data-timing="パッシブ"] {
+            background: #fafafa;
+        }
+
+        .folder[data-timing="ムーブ"] {
+            background: #43ffd0;
+        }
+
+        .folder[data-timing="マイナー"] {
+            background: #19ffff;
+        }
+
+        .folder[data-timing="メジャー"] {
+            background: #ff65de;
+        }
+
+        .folder[data-timing="フリー"] {
+            background: #c9c9c9;
+        }
+
+        .folder[data-timing="レガシー"] {
+            background: #008a35;
+        }
+
+        .folder[data-timing="セットアップ"] {
+            background: #52ff77;
+        }
+
+        .folder[data-timing="イニシアチブ"] {
+            background: #f1ff6f;
+        }
+
+        .folder[data-timing="クリンナップ"] {
+            background: #b65cff;
+        }
+
+        .folder[data-timing="判定の直前"] {
+            background: #c5b802;
+        }
+
+        .folder[data-timing="判定の直後"] {
+            background: #ce7611;
+        }
+
+        .folder[data-timing="DRの直前"] {
+            background: #cfabc3;
+        }
+
+        .folder[data-timing="DRの直後"] {
+            background: #ca2678;
+        }
+
+        .folder[data-timing="戦闘不能"] {
+            background: #797979;
+        }
+
+        .folder[data-timing="アイテム"] {
+            background: #ff6060;
+        }
+
+        .folder[data-timing="戦闘前"] {
+            background: #a0a0a0;
+        }
+
+        .folder[data-timing="効果参照"] {
+            background: #bbbbbb;
+        }
+
+        .folder[data-timing="《》"] {
+            background: #dfdfdf;
+        }
+
+        .file {
+            background: #e9e9e9;
+            padding: 6px;
+            margin-left: 2em;
+            flex-direction: column;
+        }
+
+        .file-header {
+            display: flex;
+            align-items: center;
+        }
+
+        .subfile-list {
+            margin-left: 2em;
+        }
+
+        .subfile {
+            background: #ffffff;
+            margin: 2px 0;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+        }
+
+        .drag-handle {
+            cursor: move;
+            margin-right: 6px;
+            font-weight: bold;
+        }
+
+        .attr-宣言 {
+            background: #fbdeff;
+        }
+
+        .attr-変動 {
+            background: #ffe0e0;
+        }
+
+        .attr-対象 {
+            background: #e0ffe0;
+        }
+
+        .attr-判定 {
+            background: #e0e0ff;
+        }
+
+        .attr-効果 {
+            background: #fff0c0;
+        }
+
+        .attr-フラグ {
+            background: #f0e0ff;
+        }
+
+        .attr-計算 {
+            background: #d0f0f0;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            margin: 0 4px;
+        }
+
+        select {
+            min-width: 100px;
+            margin-right: 8px;
+        }
+
+        .sum-display {
+            margin: 0 8px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .timing-item {
+            background: #f7f7f7;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 6px 10px;
+            margin: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timing-item .drag-handle {
+            cursor: move;
+            font-weight: bold;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1>AR2Eキャラコマツール
+            <span class="rights">本作は、「著：菊池たけし／F.E.A.R」が権利を有する『アリアンロッドRPG2E』の二次創作作品です。(C)F.E.A.R. 「アリアンロッドRPG 2E」</span>
+
+        </h1>
+        
+    </header>
+    <h3>
+        凡例
+        <button id="toggleLegendBtn">非表示</button>
+    </h3>
+    <div id="legendBox">
+        <div>
+            <label for="legendDeclaration">宣言凡例</label>
+            <input type="text" id="legendDeclaration" style="width: 100%;">
+        </div>
+        <div>
+            <label for="legendDeclaration">判定凡例</label>
+            <input type="text" id="legendRoll" style="width: 100%;">
+        </div>
+        <div>
+            <label for="legendDeclaration">メモ凡例</label>
+            <textarea id="legendMemo" rows="6" style="width: 100%;"></textarea>
+        </div>
+    </div>
+    <h3>
+        ゆとシート読込
+    </h3>
+    <div style="display: flex; align-items: center; gap: 0.5em; margin-bottom: 1em;">
+        <input type="text" id="ytsheetUrl" placeholder="ゆとシートのURLを入力" style="flex: 1;">
+        <button id="loadYtsheetBtn">読込</button>
+    </div>
+    <h3>
+        キャラ名
+    </h3>
+    <input type="text" id="charNameInput" placeholder="名前を入力" style="width: 40%; margin-bottom: 1em;">
+    <input type="text" id="charColorCodeInput" style="width: 80px;" placeholder="#888888">
+    <input type="color" id="charColorInput" style="margin-left: 1em;">
+
+
+    <h3>
+        メモ
+        <button id="toggleMemoBtn">非表示</button>
+    </h3>
+    <textarea id="memoInput" rows="6" style="width: 100%;"></textarea>
+
+    <h3>
+        行動値
+        <button id="toggleInitiativeBtn">非表示</button>
+    </h3>
+    <div id="initiativeBox">
+        <input type="number" id="initiativeValue" placeholder="行動値">
+        <label><input type="checkbox" id="initiativePlus"> 出力時に+0.1する</label>
+    </div>
+
+
+    <h3>
+        ステータス
+        <button id="toggleStatusBtn">非表示</button>
+    </h3>
+    <div id="statusList"></div>
+    <button id="addStatusBtn">+ ステータスを追加</button>
+
+    <h3>
+        パラメータ
+        <button id="toggleParamBtn">非表示</button>
+    </h3>
+    <div id="paramList"></div>
+    <button id="addParamBtn">+ パラメータを追加</button>
+
+    <h3>
+        判定
+        <button id="toggleRollBtn">非表示</button>
+    </h3>
+    <div id="rollList"></div>
+
+
+    <h3>スキル</h3>
+    <h4 style="margin-top:0.75em">
+        タイミング順設定
+        <button id="toggleTimingOrderBtn">表示</button>
+    </h4>
+    <div id="timingOrderPanel"
+        style="display:none; padding:8px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px;">
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+            <button id="resetTimingOrderBtn">デフォルトに戻す</button>
+            <button id="applyTimingOrderBtn">この順で並び替え</button>
+            <span style="opacity:0.7;">（ドラッグで順番を入れ替え）</span>
+        </div>
+        <div id="timingOrderList"></div>
+    </div>
+    <div style="margin-bottom: 0.5em;">
+
+
+        <button id="addRollSeriesBtn">判定シリーズを追加</button>
+        <button id="loadSkillsBtn">ゆとシートからスキルを読込</button>
+        <button id="sortSkillsBtn">タイミング順に並び替え</button>
+        <button id="clearAllFoldersBtn">フォルダ全消去</button>
+
+
+    </div>
+
+
+    <div id="container"></div>
+
+    <h3>チャットパレットプレビュー</h3>
+    <textarea id="chatPreview" rows="12" style="width: 100%;" readonly></textarea>
+
+    <h3>出力</h3>
+    <button id="exportBtn">出力</button>
+    <textarea id="exportJsonBox" rows="10" style="width: 100%;" readonly></textarea>
+
+    <h3>保存/読み込み</h3>
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+        <button id="saveSlotBtn">ブラウザに保存</button>
+        <button id="toggleSavePanelBtn">保存一覧を表示</button>
+    </div>
+
+    <div id="savePanel"
+        style="display:none; border:1px solid #ddd; border-radius:8px; padding:8px; margin-bottom:12px;">
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+            <button id="loadSelectedBtn">選択を読込（先頭）</button>
+            <button id="deleteSelectedBtn">選択を削除</button>
+            <button id="exportSelectedBtn">選択をJSONに書き出し</button>
+            <button id="importJsonBtn">JSONから追加</button>
+            <label style="margin-left:auto;"><input type="checkbox" id="toggleSelectAll"> 全選択/解除</label>
+            <input id="importJsonInput" type="file" accept="application/json" style="display:none;">
+        </div>
+        <div id="saveList"></div>
+    </div>
+
+
+
+    <script>
+
+        const UNSET_TIMING_LABEL = '（未設定）';
+        let structure = {
+            folders: [],
+            name: "",
+            color: "#888888",
+            memo: "",
+            memoHidden: false,
+            status: [],
+            statusHidden: false,
+            params: [],
+            paramsHidden: false,
+            rollHidden: false,
+            roll: {
+                "筋力判定": { fixed: "", dice: "" },
+                "器用判定": { fixed: "", dice: "" },
+                "敏捷判定": { fixed: "", dice: "" },
+                "知力判定": { fixed: "", dice: "" },
+                "感知判定": { fixed: "", dice: "" },
+                "精神判定": { fixed: "", dice: "" },
+                "幸運判定": { fixed: "", dice: "" },
+                "命中判定": { fixed: "", dice: "" },
+                "回避判定": { fixed: "", dice: "" },
+                "トラップ探知判定": { fixed: "", dice: "" },
+                "トラップ解除判定": { fixed: "", dice: "" },
+                "危険感知判定": { fixed: "", dice: "" },
+                "エネミー識別判定": { fixed: "", dice: "" },
+                "アイテム鑑定判定": { fixed: "", dice: "" },
+                "魔術判定": { fixed: "", dice: "" },
+                "呪歌判定": { fixed: "", dice: "" },
+                "錬金術判定": { fixed: "", dice: "" }
+            },
+            legend: {
+                declaration: '《{{スキル名}}》{{SL}}：{{タイミング}}/{{判定}}/{{対象}}/{{射程}}/{{使用条件}}[{{コスト}}] {{分類L}} {{効果}}',
+                roll: '{{固定値}}+({{ダイス数}}+{判定D})D>=? {{判定名}}',
+                memo: 'PL：{{PL}}\nCL：{{CL}}\n{{メインクラス}}/{{サポートクラス}}\n\n{{年齢}}/{{性別}}/{{種族}}\n\n出自：{{出自}}/境遇：{{境遇}}/目的：{{目的}}\n\nギルド：{{ギルド}}'
+            },
+            legendHidden: false,
+
+            initiative: {
+                value: 0,
+                plusPointOne: false,
+                hidden: false
+            },
+
+            timingOrderHidden: true,
+            timingOrder: [
+                "アイテム", "戦闘前", "セットアップ", "イニシアチブ", "フリー", "ムーブ",
+                "レガシー", "マイナー", "メジャー", "判定の直前", "判定の直後",
+                "リアクション", "DRの直前", "DRの直後", "効果参照", "《》", UNSET_TIMING_LABEL, "戦闘不能", "クリンナップ"
+            ],
+
+        };
+
+        let ytData = null;
+
+
+
+        const attributeOptions = ['', '宣言', '変動', '対象', '判定', '効果', 'フラグ', '計算'];
+
+        const timingOptions = [
+            "", "パッシブ", "ムーブ", "マイナー", "メジャー", "リアクション", "フリー", "レガシー",
+            "セットアップ", "イニシアチブ", "クリンナップ",
+            "判定の直前", "判定の直後", "DRの直前", "DRの直後",
+            "戦闘不能", "アイテム", "戦闘前", "効果参照", "《》"
+        ];
+
+
+
+
+        function updateSumDisplay(file, displayEl) {
+            const total = (file.sub || []).reduce((acc, s) => {
+                acc.dice += parseInt(s.dice || 0);
+                acc.fixed += parseInt(s.fixed || 0);
+                if (s.extra) acc.extra.push(s.extra);
+                return acc;
+            }, { dice: 0, fixed: 0, extra: [] });
+            const sumStr = `${total.dice}D+${total.fixed}` + (total.extra.length ? '+' + total.extra.join('+') : '') + '；合計';
+            displayEl.textContent = sumStr;
+        }
+
+        function render() {
+
+
+            try {
+
+                document.getElementById('loadYtsheetBtn').onclick = async () => {
+                    const rawUrl = document.getElementById('ytsheetUrl').value.trim();
+                    const jsonUrl = rawUrl.includes('&mode=json') ? rawUrl : rawUrl + '&mode=json';
+
+                    try {
+                        const res = await fetch(jsonUrl);
+                        if (!res.ok) throw new Error('HTTPエラー ' + res.status);
+                        ytData = await res.json();
+                        alert('ゆとシート読込成功！');
+                        applyYtData();
+                    } catch (e) {
+                        alert('読み込み失敗: ' + e.message);
+                    }
+                };
+
+
+                //ステータスまわり
+                const statusList = document.getElementById('statusList');
+                statusList.innerHTML = '';
+                structure.status.forEach((s, i) => {
+                    const row = document.createElement('div');
+                    row.className = 'layer';
+
+                    const handle = document.createElement('span');
+                    handle.className = 'drag-handle';
+                    handle.textContent = '≡';
+                    row.appendChild(handle);
+
+                    const labelInput = document.createElement('input');
+                    labelInput.placeholder = 'ラベル';
+                    labelInput.value = s.label;
+                    labelInput.oninput = e => s.label = e.target.value;
+                    row.appendChild(labelInput);
+
+                    const currentInput = document.createElement('input');
+                    currentInput.type = 'number';
+                    currentInput.placeholder = '現在';
+                    currentInput.value = s.current;
+                    currentInput.oninput = e => s.current = parseInt(e.target.value) || 0;
+                    row.appendChild(currentInput);
+
+                    const maxInput = document.createElement('input');
+                    maxInput.type = 'number';
+                    maxInput.placeholder = '最大';
+                    maxInput.value = s.max;
+                    maxInput.oninput = e => s.max = parseInt(e.target.value) || 0;
+                    row.appendChild(maxInput);
+
+                    const addBtn = createButton('+', () => {
+                        structure.status.splice(i + 1, 0, { label: '', current: 0, max: 0 });
+                        render();
+                    });
+                    const delBtn = createButton('×', () => {
+                        structure.status.splice(i, 1);
+                        render();
+                    });
+                    row.append(addBtn, delBtn);
+                    statusList.appendChild(row);
+                });
+
+                new Sortable(statusList, {
+                    handle: '.drag-handle',
+                    animation: 150,
+                    onEnd: evt => {
+                        const moved = structure.status.splice(evt.oldIndex, 1)[0];
+                        structure.status.splice(evt.newIndex, 0, moved);
+                        render();
+                    }
+                });
+
+                //パラメータまわり
+                const paramList = document.getElementById('paramList');
+                paramList.innerHTML = '';
+                structure.params.forEach((p, i) => {
+                    const row = document.createElement('div');
+                    row.className = 'layer';
+
+                    const handle = document.createElement('span');
+                    handle.className = 'drag-handle';
+                    handle.textContent = '≡';
+                    row.appendChild(handle);
+
+                    const labelInput = document.createElement('input');
+                    labelInput.placeholder = 'ラベル';
+                    labelInput.value = p.label;
+                    labelInput.oninput = e => p.label = e.target.value;
+                    row.appendChild(labelInput);
+
+                    const valueInput = document.createElement('input');
+                    valueInput.placeholder = '値';
+                    valueInput.value = p.value;
+                    valueInput.oninput = e => p.value = e.target.value;
+                    row.appendChild(valueInput);
+
+                    const addBtn = createButton('+', () => {
+                        structure.params.splice(i + 1, 0, { label: '', value: '' });
+                        render();
+                    });
+                    const delBtn = createButton('×', () => {
+                        structure.params.splice(i, 1);
+                        render();
+                    });
+                    row.append(addBtn, delBtn);
+                    paramList.appendChild(row);
+                });
+
+                new Sortable(paramList, {
+                    handle: '.drag-handle',
+                    animation: 150,
+                    onEnd: evt => {
+                        const moved = structure.params.splice(evt.oldIndex, 1)[0];
+                        structure.params.splice(evt.newIndex, 0, moved);
+                        render();
+                    }
+                });
+
+                //判定リスト
+                const rollList = document.getElementById('rollList');
+                rollList.innerHTML = '';
+
+                // 表示順リスト
+                const rollLabels = [
+                    "筋力判定", "器用判定", "敏捷判定", "知力判定", "感知判定", "精神判定", "幸運判定",
+                    "---",
+                    "命中判定", "回避判定", "トラップ探知判定", "トラップ解除判定", "危険感知判定", "エネミー識別判定", "アイテム鑑定判定", "魔術判定", "呪歌判定", "錬金術判定"
+                ];
+
+                rollLabels.forEach(label => {
+                    if (label === '---') {
+                        const heading = document.createElement('div');
+                        heading.style.fontWeight = 'bold';
+                        heading.style.marginTop = '0.5em';
+                        heading.textContent = '特殊な判定';
+                        rollList.appendChild(heading);
+                        return;
+                    }
+
+                    const j = structure.roll[label]; // 既に初期化済み
+
+                    const row = document.createElement('div');
+                    row.className = 'layer';
+
+                    const fixedInput = document.createElement('input');
+                    fixedInput.placeholder = '固定値';
+                    fixedInput.value = j.fixed;
+                    fixedInput.oninput = e => j.fixed = e.target.value;
+                    row.appendChild(fixedInput);
+
+                    row.appendChild(document.createTextNode('+'));
+
+                    const diceInput = document.createElement('input');
+                    diceInput.placeholder = 'ダイス数';
+                    diceInput.value = j.dice;
+                    diceInput.oninput = e => j.dice = e.target.value;
+                    row.appendChild(diceInput);
+
+                    row.appendChild(document.createTextNode('D ' + label));
+                    rollList.appendChild(row);
+                });
+
+                // 凡例まわり
+
+                const legendBox = document.getElementById('legendBox');
+
+                legendBox.style.display = structure.legendHidden ? 'none' : 'block';
+
+                document.getElementById('toggleLegendBtn').textContent = structure.legendHidden ? '表示' : '非表示';
+                document.getElementById('toggleLegendBtn').onclick = () => {
+                    structure.legendHidden = !structure.legendHidden;
+                    render();
+                };
+
+                // 凡例入力欄に値を反映＆保存
+                document.getElementById('legendDeclaration').value = structure.legend.declaration;
+                document.getElementById('legendRoll').value = structure.legend.roll;
+                document.getElementById('legendMemo').value = structure.legend.memo;
+
+                document.getElementById('legendDeclaration').oninput = e => structure.legend.declaration = e.target.value;
+                document.getElementById('legendRoll').oninput = e => structure.legend.roll = e.target.value;
+                document.getElementById('legendMemo').oninput = e => structure.legend.memo = e.target.value;
+
+                const charNameInput = document.getElementById('charNameInput');
+                if (charNameInput) {
+                    charNameInput.value = structure.name || '';
+                    charNameInput.oninput = e => structure.name = e.target.value;
+
+                    const colorInput = document.getElementById('charColorInput');
+                    const colorCodeInput = document.getElementById('charColorCodeInput');
+
+                    if (colorInput && colorCodeInput) {
+                        // カラーピッカー変更時：コード欄＆構造を更新
+                        colorInput.oninput = e => {
+                            structure.color = e.target.value;
+                            colorCodeInput.value = structure.color;
+                            updateChatPreview();
+                        };
+
+                        // Enter押した時だけ判定
+                        colorCodeInput.onkeydown = e => {
+                            if (e.key === 'Enter') {
+                                let val = e.target.value.trim();
+                                if (!val.startsWith('#')) val = '#' + val;
+
+                                if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+                                    structure.color = val;
+                                    colorInput.value = val;
+                                    e.target.value = val;
+                                    updateChatPreview();
+                                } else {
+                                    // 無効なコード → 何もしない
+                                }
+                            }
+                        };
+
+                        // 初期状態反映（render時）
+                        colorInput.value = structure.color || '#888888';
+                        colorCodeInput.value = structure.color || '#888888';
+                    }
+                }
+
+                //メモ
+                document.getElementById('memoInput').value = structure.memo || '';
+                document.getElementById('memoInput').oninput = e => {
+                    structure.memo = e.target.value;
+                };
+
+                //行動値
+                const initVal = document.getElementById('initiativeValue');
+                if (initVal) {
+                    initVal.value = structure.initiative.value;
+                    initVal.oninput = e => structure.initiative.value = parseInt(e.target.value) || 0;
+                }
+
+                const plusCheck = document.getElementById('initiativePlus');
+                if (plusCheck) {
+                    plusCheck.checked = structure.initiative.plusPointOne;
+                    plusCheck.onchange = e => structure.initiative.plusPointOne = e.target.checked;
+                }
+
+
+
+                //非表示
+                const memoInput = document.getElementById('memoInput');
+                memoInput.style.display = structure.memoHidden ? 'none' : 'block';
+
+                const memoToggleBtn = document.getElementById('toggleMemoBtn');
+                memoToggleBtn.textContent = structure.memoHidden ? '表示' : '非表示';
+                memoToggleBtn.onclick = () => {
+                    structure.memoHidden = !structure.memoHidden;
+                    render();
+                };
+
+                statusList.style.display = structure.statusHidden ? 'none' : 'block';
+
+                const statusAddBtn = document.getElementById('addStatusBtn');
+                statusAddBtn.style.display = structure.statusHidden ? 'none' : 'inline-block';
+
+                const statusToggleBtn = document.getElementById('toggleStatusBtn');
+                statusToggleBtn.textContent = structure.statusHidden ? '表示' : '非表示';
+                statusToggleBtn.onclick = () => {
+                    structure.statusHidden = !structure.statusHidden;
+                    render();
+                };
+
+                paramList.style.display = structure.paramsHidden ? 'none' : 'block';
+
+                const paramAddBtn = document.getElementById('addParamBtn');
+                paramAddBtn.style.display = structure.paramsHidden ? 'none' : 'inline-block';
+
+                const paramToggleBtn = document.getElementById('toggleParamBtn');
+                paramToggleBtn.textContent = structure.paramsHidden ? '表示' : '非表示';
+                paramToggleBtn.onclick = () => {
+                    structure.paramsHidden = !structure.paramsHidden;
+                    render();
+                };
+
+                document.getElementById('toggleRollBtn').textContent = structure.rollHidden ? '表示' : '非表示';
+                document.getElementById('toggleRollBtn').onclick = () => {
+                    structure.rollHidden = !structure.rollHidden;
+                    render();
+                };
+
+                rollList.style.display = structure.rollHidden ? 'none' : 'block';
+
+                const initiativeBox = document.getElementById('initiativeBox');
+                initiativeBox.style.display = structure.initiative.hidden ? 'none' : 'block';
+
+                const initToggle = document.getElementById('toggleInitiativeBtn');
+                initToggle.textContent = structure.initiative.hidden ? '表示' : '非表示';
+                initToggle.onclick = () => {
+                    structure.initiative.hidden = !structure.initiative.hidden;
+                    render();
+                };
+
+
+
+
+                //スキルフォルダまわり
+                const container = document.getElementById('container');
+                container.innerHTML = '';
+
+                const folderList = document.createElement('div');
+                folderList.id = 'folderList';
+                container.appendChild(folderList);
+
+                const inputWidthMap = {
+                    '宣言': '80%',
+                    '効果': '80%',
+                    '判定': '80%',
+                    '変動': '100px',
+                    '対象': '100px',
+                    'フラグ': '200px',
+                    '計算': '300px',
+                    '': '200px' // 未設定やその他
+                };
+
+                //フォルダが0個ならフォルダ生やしボタン
+                if (structure.folders.length === 0) {
+                    const spawnBtn = createButton('＋フォルダ', () => {
+                        structure.folders.push({ name: '新しいフォルダ', hidden: false, files: [], timing: '' });
+                        render();
+                    });
+                    folderList.appendChild(spawnBtn);
+                }
+
+
+                structure.folders.forEach((folder, folderIndex) => {
+                    const folderWrapper = document.createElement('div');
+                    folderWrapper.dataset.index = folderIndex;
+
+                    const folderDiv = document.createElement('div');
+                    folderDiv.className = 'layer folder';
+                    folderDiv.dataset.timing = folder.timing || "";
+
+                    const folderHandle = document.createElement('span');
+                    folderHandle.className = 'drag-handle';
+                    folderHandle.textContent = '≡';
+                    folderDiv.appendChild(folderHandle);
+
+                    const folderInput = document.createElement('input');
+                    folderInput.value = folder.name;
+                    folderInput.oninput = e => folder.name = e.target.value;
+                    folderDiv.appendChild(folderInput);
+
+                    const timingSelect = document.createElement('select');
+                    timingOptions.forEach(t => {
+                        const opt = document.createElement('option');
+                        opt.value = t;
+                        opt.textContent = t || '（未設定）';
+                        if (folder.timing === t) opt.selected = true;
+                        timingSelect.appendChild(opt);
+                    });
+                    timingSelect.onchange = e => {
+                        folder.timing = e.target.value;
+                        render();
+                    };
+                    folderDiv.appendChild(timingSelect);
+
+
+                    const toggleBtn = createButton(folder.hidden ? '表示' : '非表示', () => {
+                        folder.hidden = !folder.hidden;
+                        render();
+                    });
+                    const upBtn = createButton('↑', () => moveFolder(folderIndex, -1));
+                    const downBtn = createButton('↓', () => moveFolder(folderIndex, 1));
+                    const delBtn = createButton('削除', () => {
+                        structure.folders.splice(folderIndex, 1);
+                        render();
+                    });
+                    const addFolderBtn = createButton('+フォルダ', () => {
+                        structure.folders.splice(folderIndex + 1, 0, { name: '新しいフォルダ', hidden: false, files: [], timing: '' });
+                        render();
+                    });
+                    const addFileBtn = createButton('+ファイル', () => {
+                        folder.files.push({ name: '新しいファイル', attr: '', sub: [], hideSub: false, enabled: true });
+                        render();
+                    });
+
+                    folderDiv.append(toggleBtn, upBtn, downBtn, delBtn, addFolderBtn, addFileBtn);
+                    folderWrapper.appendChild(folderDiv);
+
+                    const fileList = document.createElement('div');
+                    fileList.className = 'file-list';
+                    fileList.dataset.folderIndex = folderIndex;
+
+                    if (!folder.hidden) {
+                        folder.files.forEach((file, fileIndex) => {
+                            const fileDiv = document.createElement('div');
+                            fileDiv.className = 'file attr-' + (file.attr || '');
+
+                            const fileHeader = document.createElement('div');
+                            fileHeader.className = 'layer file-header';
+                            const fileHandle = document.createElement('span');
+                            fileHandle.className = 'drag-handle';
+                            fileHandle.textContent = '≡';
+                            fileHeader.appendChild(fileHandle);
+
+                            const attrSelect = document.createElement('select');
+                            attributeOptions.forEach(option => {
+                                const opt = document.createElement('option');
+                                opt.value = option;
+                                opt.textContent = option;
+                                if (file.attr === option) opt.selected = true;
+                                attrSelect.appendChild(opt);
+                            });
+                            attrSelect.onchange = e => {
+                                const newAttr = e.target.value;
+                                file.attr = newAttr;
+                                switch (newAttr) {
+                                    case '宣言':
+                                        file.name = '';
+                                        break;
+                                    case '変動':
+                                        file.name = ':';
+                                        break;
+                                    case '対象':
+                                        file.name = '対象：';
+                                        break;
+                                    case '判定':
+                                        file.name = '';
+                                        break;
+                                    case '効果':
+                                        file.name = '';
+                                        break;
+                                    case 'フラグ':
+                                        file.name = ':';
+                                        break;
+                                    case '計算':
+                                        file.name = '';
+                                        file.enabled = false; // 計算は常に出力なし
+                                        break;
+                                    default:
+                                        file.name = '新しいファイル';
+                                }
+                                render();
+                            };
+                            fileHeader.appendChild(attrSelect);
+
+                            if (file.attr !== '計算') {
+                                const checkbox = document.createElement('input');
+                                checkbox.type = 'checkbox';
+                                checkbox.checked = file.enabled !== false;
+                                checkbox.onchange = e => file.enabled = e.target.checked;
+                                fileHeader.appendChild(checkbox);
+                            } else {
+                                file.enabled = false;
+                            }
+
+                            const fileInput = document.createElement('input');
+                            fileInput.value = file.name;
+                            fileInput.oninput = e => file.name = e.target.value;
+
+                            const width = inputWidthMap[file.attr] || '200px';
+                            fileInput.style.width = width;
+
+                            fileHeader.appendChild(fileInput);
+
+                            let sumDisplay = null;
+                            if (file.attr === '計算') {
+                                sumDisplay = document.createElement('span');
+                                sumDisplay.className = 'sum-display';
+                                fileHeader.appendChild(sumDisplay);
+                                const toggleSubBtn = createButton(file.hideSub ? '表示' : '非表示', () => {
+                                    file.hideSub = !file.hideSub;
+                                    render();
+                                });
+
+                                const copyBtn = createButton('計算をコピー', () => {
+                                    copyCalcToClipboard(file);
+                                });
+                                fileHeader.appendChild(copyBtn);
+
+                                const makeEffectBtn = createButton('効果を作る', () => {
+                                    const expr = buildCalcTotalExpr(file);                 // 例: "2D+3+{精神}"
+                                    const folder = structure.folders[folderIndex];
+                                    // 現在の計算ファイルの“直上”に挿入
+                                    folder.files.splice(fileIndex, 0, {
+                                        name: expr,
+                                        attr: '効果',
+                                        sub: [],
+                                        enabled: true
+                                    });
+                                    render();
+                                });
+                                fileHeader.appendChild(makeEffectBtn);
+
+
+                                fileHeader.appendChild(toggleSubBtn);
+                                updateSumDisplay(file, sumDisplay);
+                            }
+
+                            const fileUp = createButton('↑', () => moveFile(folderIndex, fileIndex, -1));
+                            const fileDown = createButton('↓', () => moveFile(folderIndex, fileIndex, 1));
+                            const fileDel = createButton('削除', () => {
+                                folder.files.splice(fileIndex, 1);
+                                render();
+                            });
+                            fileHeader.append(fileUp, fileDown, fileDel);
+
+                            fileDiv.appendChild(fileHeader);
+
+                            if (file.attr === '計算') {
+                                const addSubBtn = createButton('+由来', () => {
+                                    file.sub.push({ dice: 0, fixed: 0, extra: '', source: '' });
+                                    render();
+                                });
+                                fileDiv.appendChild(addSubBtn);
+
+                                if (!file.hideSub) {
+                                    const subList = document.createElement('div');
+                                    subList.className = 'subfile-list';
+                                    file.sub.forEach((sub, subIndex) => {
+                                        const subDiv = document.createElement('div');
+                                        subDiv.className = 'subfile';
+
+                                        const subHandle = document.createElement('span');
+                                        subHandle.className = 'drag-handle';
+                                        subHandle.textContent = '≡';
+                                        subDiv.appendChild(subHandle);
+
+                                        const diceInput = document.createElement('input');
+                                        diceInput.type = 'number';
+                                        diceInput.placeholder = 'ダイス数';
+                                        diceInput.value = sub.dice;
+                                        diceInput.oninput = e => {
+                                            sub.dice = parseInt(e.target.value) || 0;
+                                            updateSumDisplay(file, sumDisplay);
+                                        };
+
+                                        const fixedInput = document.createElement('input');
+                                        fixedInput.type = 'number';
+                                        fixedInput.placeholder = '固定値';
+                                        fixedInput.value = sub.fixed;
+                                        fixedInput.oninput = e => {
+                                            sub.fixed = parseInt(e.target.value) || 0;
+                                            updateSumDisplay(file, sumDisplay);
+                                        };
+
+                                        const extraInput = document.createElement('input');
+                                        extraInput.placeholder = '{精神}など';
+                                        extraInput.value = sub.extra;
+                                        extraInput.oninput = e => {
+                                            sub.extra = e.target.value;
+                                            updateSumDisplay(file, sumDisplay);
+                                        };
+
+                                        const sourceInput = document.createElement('input');
+                                        sourceInput.placeholder = '由来';
+                                        sourceInput.value = sub.source;
+                                        sourceInput.oninput = e => {
+                                            sub.source = e.target.value;
+                                        };
+
+                                        const subDel = createButton('削除', () => {
+                                            file.sub.splice(subIndex, 1);
+                                            render();
+                                        });
+
+                                        subDiv.append(diceInput, document.createTextNode('D+'), fixedInput, document.createTextNode('+'), extraInput, sourceInput, subDel);
+                                        subList.appendChild(subDiv);
+                                    });
+
+                                    new Sortable(subList, {
+                                        handle: '.drag-handle',
+                                        animation: 150,
+                                        onEnd: evt => {
+                                            const subItems = file.sub;
+                                            const moved = subItems.splice(evt.oldIndex, 1)[0];
+                                            subItems.splice(evt.newIndex, 0, moved);
+                                            render();
+                                        }
+                                    });
+
+                                    fileDiv.appendChild(subList);
+                                }
+                            }
+
+
+                            fileList.appendChild(fileDiv);
+                        });
+                    }
+
+                    folderWrapper.appendChild(fileList);
+                    folderList.appendChild(folderWrapper);
+                });
+
+                new Sortable(folderList, {
+                    handle: '.drag-handle',
+                    animation: 150,
+                    onEnd: evt => {
+                        const movedItem = structure.folders.splice(evt.oldIndex, 1)[0];
+                        structure.folders.splice(evt.newIndex, 0, movedItem);
+                        render();
+                    }
+                });
+
+                document.querySelectorAll('.file-list').forEach(fileListEl => {
+                    const folderIndex = parseInt(fileListEl.dataset.folderIndex);
+                    new Sortable(fileListEl, {
+                        handle: '.drag-handle',
+                        animation: 150,
+                        onEnd: evt => {
+                            const files = structure.folders[folderIndex].files;
+                            const moved = files.splice(evt.oldIndex, 1)[0];
+                            files.splice(evt.newIndex, 0, moved);
+                            render();
+                        }
+                    });
+                });
+
+                document.getElementById('addStatusBtn').onclick = () => {
+                    structure.status.push({ label: '', current: 0, max: 0 });
+                    render();
+                };
+
+                document.getElementById('addParamBtn').onclick = () => {
+                    structure.params.push({ label: '', value: '' });
+                    render();
+
+
+                };
+
+                document.getElementById('addRollSeriesBtn').onclick = () => {
+                    addRollSeriesFolders();
+                    render();
+                };
+
+
+                document.getElementById('loadSkillsBtn').onclick = () => {
+                    if (!ytData) {
+                        alert('ゆとシートが読み込まれていません');
+                        return;
+                    }
+                    applySkillsFromYtData();
+                    render();
+                };
+
+                document.getElementById('sortSkillsBtn').onclick = () => {
+                    sortFoldersByTiming();
+                    render();
+                };
+
+                // 全消去ボタン
+                const clearBtn = document.getElementById('clearAllFoldersBtn');
+                if (clearBtn) {
+                    clearBtn.onclick = () => {
+                        if (!structure.folders.length) {
+                            alert('消去するフォルダがありません');
+                            return;
+                        }
+                        if (confirm('全部削除します。よろしいですか？')) {
+                            structure.folders = [];
+                            render();
+                        }
+                    };
+                }
+
+
+                // === 保存UI配線 ===
+                const saveBtn = document.getElementById('saveSlotBtn');
+                const togglePanelBtn = document.getElementById('toggleSavePanelBtn');
+                const panel = document.getElementById('savePanel');
+                const loadBtn = document.getElementById('loadSelectedBtn');
+                const deleteBtn = document.getElementById('deleteSelectedBtn');
+                const exportBtn2 = document.getElementById('exportSelectedBtn');
+                const importBtn2 = document.getElementById('importJsonBtn');
+                const importInput = document.getElementById('importJsonInput');
+                const selectAll = document.getElementById('toggleSelectAll');
+
+                if (saveBtn) saveBtn.onclick = saveCurrentToBrowser;
+
+                if (togglePanelBtn && panel) {
+                    togglePanelBtn.onclick = () => {
+                        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+                        if (panel.style.display === 'block') renderSaveList();
+                    };
+                }
+
+                if (loadBtn) loadBtn.onclick = () => {
+                    const ids = getCheckedSaveIds();
+                    if (!ids.length) return alert('読み込む保存を選んでね');
+                    const hit = getSaves().find(x => x.id === ids[0]); // 先頭だけ読込
+                    if (!hit) return alert('見つかりませんでした');
+                    applySnapshot(hit.snapshot);
+                    alert(`読込：${hit.name}`);
+                };
+
+                if (deleteBtn) deleteBtn.onclick = () => {
+                    const ids = getCheckedSaveIds();
+                    if (!ids.length) return alert('削除対象が選ばれていません');
+                    if (!confirm(`${ids.length}件を削除します。よろしいですか？`)) return;
+                    deleteByIds(ids);
+                    renderSaveList();
+                };
+
+                if (exportBtn2) exportBtn2.onclick = () => {
+                    const ids = getCheckedSaveIds();
+                    exportSelected(ids);
+                };
+
+                if (importBtn2 && importInput) {
+                    importBtn2.onclick = () => importInput.click();
+                    importInput.onchange = (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        importFromJsonFile(f, () => renderSaveList());
+                        importInput.value = ''; // 同じファイル再選択を許可
+                    };
+                }
+
+                if (selectAll) {
+                    selectAll.onchange = () => {
+                        document.querySelectorAll('input[name="saveRowCheck"]').forEach(cb => cb.checked = selectAll.checked);
+                    };
+                }
+
+
+                // 並び替えまわり
+                // 保険：未設定ラベルが無い古いデータに後から足す
+                if (Array.isArray(structure.timingOrder) && !structure.timingOrder.includes(UNSET_TIMING_LABEL)) {
+                    structure.timingOrder.push(UNSET_TIMING_LABEL);
+                }
+
+
+
+                // タイミング順設定パネル
+                const timingToggleBtn = document.getElementById('toggleTimingOrderBtn');
+                const timingPanel = document.getElementById('timingOrderPanel');
+                const timingList = document.getElementById('timingOrderList');
+                const resetTimingBtn = document.getElementById('resetTimingOrderBtn');
+                const applyTimingBtn = document.getElementById('applyTimingOrderBtn');
+
+                // 表示/非表示
+                if (timingToggleBtn && timingPanel) {
+                    timingToggleBtn.textContent = structure.timingOrderHidden ? '表示' : '非表示';
+                    timingPanel.style.display = structure.timingOrderHidden ? 'none' : 'block';
+                    timingToggleBtn.onclick = () => { structure.timingOrderHidden = !structure.timingOrderHidden; render(); };
+                }
+
+                // リスト再描画
+                if (timingList) {
+                    timingList.innerHTML = '';
+                    // 空文字や「パッシブ」は並び順対象外にしている想定なので structure.timingOrder だけ使う
+                    (structure.timingOrder || []).forEach(lbl => {
+                        const row = document.createElement('div');
+                        row.className = 'timing-item';
+                        const handle = document.createElement('span');
+                        handle.className = 'drag-handle';
+                        handle.textContent = '≡';
+                        const text = document.createElement('span');
+                        text.textContent = lbl || '（未設定）';
+                        row.append(handle, text);
+                        timingList.appendChild(row);
+                    });
+
+                    new Sortable(timingList, {
+                        handle: '.drag-handle',
+                        animation: 150,
+                        onEnd: evt => {
+                            const arr = structure.timingOrder.slice();
+                            const moved = arr.splice(evt.oldIndex, 1)[0];
+                            arr.splice(evt.newIndex, 0, moved);
+                            structure.timingOrder = arr;
+                            render();
+                        }
+                    });
+                }
+
+                // リセット
+                if (resetTimingBtn) {
+                    resetTimingBtn.onclick = () => {
+                        structure.timingOrder = [
+                            "アイテム", "戦闘前", "セットアップ", "イニシアチブ", "フリー", "ムーブ",
+                            "レガシー", "マイナー", "メジャー", "判定の直前", "判定の直後",
+                            "リアクション", "DRの直前", "DRの直後", "効果参照", "《》",
+                            UNSET_TIMING_LABEL,
+                            "戦闘不能", "クリンナップ"
+                        ];
+                        render();
+                    };
+                }
+
+                // この順で並び替え
+                if (applyTimingBtn) {
+                    applyTimingBtn.onclick = () => {
+                        sortFoldersByTiming(); // 下で差し替える関数を呼ぶ
+                        render();
+                    };
+                }
+
+
+                document.getElementById('exportBtn').onclick = exportCharacter;
+
+
+                updateChatPreview();
+
+
+
+            } catch (e) {
+                console.error("render内でエラー発生:", e);
+                alert("render内でエラーが出ています。開発者ツールを確認してね。");
+            }
+
+        }
+
+        function createButton(label, handler) {
+            const btn = document.createElement('button');
+            btn.textContent = label;
+            btn.onclick = handler;
+            return btn;
+        }
+
+        function moveFolder(index, delta) {
+            const target = index + delta;
+            if (target < 0 || target >= structure.folders.length) return;
+            [structure.folders[index], structure.folders[target]] = [structure.folders[target], structure.folders[index]];
+            render();
+        }
+
+        function moveFile(folderIndex, fileIndex, delta) {
+            const files = structure.folders[folderIndex].files;
+            const target = fileIndex + delta;
+            if (target < 0 || target >= files.length) return;
+            [files[fileIndex], files[target]] = [files[target], files[fileIndex]];
+            render();
+        }
+
+        function addRollSeriesFolders() {
+            const rollLegend = structure.legend.roll;
+            const abilityLabels = [
+                "筋力判定", "器用判定", "敏捷判定", "知力判定", "感知判定", "精神判定", "幸運判定"
+            ];
+            const specialLabels = [
+                "命中判定", "回避判定", "トラップ探知判定", "トラップ解除判定",
+                "危険感知判定", "エネミー識別判定", "アイテム鑑定判定",
+                "魔術判定", "呪歌判定", "錬金術判定"
+            ];
+
+            function makeRollFiles(labels) {
+                return labels.map(label => {
+                    const roll = structure.roll[label] || { fixed: '', dice: '' };
+                    const text = rollLegend
+                        .replace(/{{固定値}}/g, roll.fixed ?? '')
+                        .replace(/{{ダイス数}}/g, roll.dice ?? '')
+                        .replace(/{{判定名}}/g, label);
+                    return {
+                        name: text,
+                        attr: '判定',
+                        sub: [],
+                        enabled: true
+                    };
+                });
+            }
+
+            structure.folders.push({
+                name: '能力値判定',
+                timing: '',
+                hidden: true,
+                files: makeRollFiles(abilityLabels)
+            });
+
+            structure.folders.push({
+                name: '特殊な判定',
+                timing: '',
+                hidden: true,
+                files: makeRollFiles(specialLabels)
+            });
+        }
+
+        function buildStatusFromYtData() {
+            if (!ytData) return [];
+            return [
+                { label: 'HP', current: parseInt(ytData.hpTotal) || 0, max: parseInt(ytData.hpTotal) || 0 },
+                { label: 'MP', current: parseInt(ytData.mpTotal) || 0, max: parseInt(ytData.mpTotal) || 0 },
+                { label: 'フェイト', current: parseInt(ytData.fateTotal) || 0, max: parseInt(ytData.fateTotal) || 0 },
+                { label: '重量', current: parseInt(ytData.weightItems) || 0, max: parseInt(ytData.weightLimitItems) || 0 },
+                { label: '物理防御', current: parseInt(ytData.battleTotalDef) || 0, max: null },
+                { label: '魔法防御', current: parseInt(ytData.battleTotalMDef) || 0, max: null },
+            ];
+        }
+
+        function buildParamsFromYtData() {
+            if (!ytData) return [];
+            const pairs = [
+                ['CL', ytData.level],
+                ['移動力', ytData.battleTotalMove],
+                ['筋力', ytData.sttStrTotal],
+                ['器用', ytData.sttDexTotal],
+                ['敏捷', ytData.sttAgiTotal],
+                ['知力', ytData.sttIntTotal],
+                ['感知', ytData.sttSenTotal],
+                ['精神', ytData.sttMndTotal],
+                ['幸運', ytData.sttLukTotal],
+            ];
+            return pairs.map(([label, v]) => ({ label, value: String(v ?? '') }));
+        }
+
+
+        //ゆとシート読み込み関数
+        function applyYtData() {
+            if (!ytData) {
+                alert('データが読み込まれていません');
+                return;
+            }
+
+            // キャラ名
+
+            const newName = ytData.characterName || '';
+            const newColor = ytData.nameColor || '#888888';
+
+
+            // キャラ名は現状が空なら即上書き、入っていれば確認
+            if (!structure.name || confirm('キャラ名を上書きしますか？')) {
+                structure.name = newName;
+            }
+
+            // 色は「現状と新色が違う時」だけ確認を取る
+            if (structure.color !== newColor) {
+                if (!structure.color || confirm(`色を上書きしますか？\n現: ${structure.color} → 新: ${newColor}`)) {
+                    structure.color = newColor;
+                }
+            }
+
+            // メモ
+            if (!structure.memo || confirm('メモを上書きしますか？')) {
+                applyMemoFromYtData();
+            }
+
+            // 行動値
+            if (!structure.initiative.value || confirm('行動値を上書きしますか？')) {
+                structure.initiative.value = parseInt(ytData.battleTotalIni) || 0;
+            }
+
+            // ステータス
+            if (!structure.status.length || confirm('ステータスを上書きしますか？')) {
+                structure.status = [];
+                applyStatusFromYtData();
+            }
+
+            // パラメータ
+            if (!structure.params.length || confirm('パラメータを上書きしますか？')) {
+                structure.params = [];
+                applyParamsFromYtData();
+            }
+
+            // 判定
+            const hasRolls = Object.values(structure.roll).some(r => r.fixed || r.dice);
+            if (!hasRolls || confirm('判定を上書きしますか？')) {
+                applyRollsFromYtData(false); // 確認なしで上書き
+            }
+
+            render();
+        }
+
+
+
+        function applyStatusFromYtData() {
+            if (!ytData) return;
+
+            const statusMap = {
+                'HP': { current: ytData.hpTotal, max: ytData.hpTotal },
+                'MP': { current: ytData.mpTotal, max: ytData.mpTotal },
+                'フェイト': { current: ytData.fateTotal, max: ytData.fateTotal },
+                '重量': { current: ytData.weightItems, max: ytData.weightLimitItems },
+                '物理防御': { current: ytData.battleTotalDef, max: null },
+                '魔法防御': { current: ytData.battleTotalMDef, max: null }
+            };
+
+            Object.entries(statusMap).forEach(([label, { current, max }]) => {
+                const exists = structure.status.some(s => s.label === label);
+                if (!exists) {
+                    structure.status.push({
+                        label,
+                        current: parseInt(current) || 0,
+                        max: max !== null ? (parseInt(max) || 0) : {}
+                    });
+                }
+            });
+        }
+
+        function applyParamsFromYtData() {
+            if (!ytData) return;
+
+            const paramMap = {
+                'CL': ytData.level,
+                '移動力': ytData.battleTotalMove,
+                '筋力': ytData.sttStrTotal,
+                '器用': ytData.sttDexTotal,
+                '敏捷': ytData.sttAgiTotal,
+                '知力': ytData.sttIntTotal,
+                '感知': ytData.sttSenTotal,
+                '精神': ytData.sttMndTotal,
+                '幸運': ytData.sttLukTotal
+            };
+
+            Object.entries(paramMap).forEach(([label, value]) => {
+                const exists = structure.params.some(p => p.label === label);
+                if (!exists) {
+                    structure.params.push({
+                        label,
+                        value: String(value ?? '')
+                    });
+                }
+            });
+        }
+
+        function applyRollsFromYtData(confirmOverwrite = true) {
+            if (!ytData) return;
+
+            const rollMap = {
+                "筋力判定": ["rollStr", "rollStrDice"],
+                "器用判定": ["rollDex", "rollDexDice"],
+                "敏捷判定": ["rollAgi", "rollAgiDice"],
+                "知力判定": ["rollInt", "rollIntDice"],
+                "感知判定": ["rollSen", "rollSenDice"],
+                "精神判定": ["rollMnd", "rollMndDice"],
+                "幸運判定": ["rollLuk", "rollLukDice"],
+                "命中判定": ["battleTotalAcc", "battleDiceAcc"],
+                "回避判定": ["battleTotalEva", "battleDiceEva"],
+                "トラップ探知判定": ["rollTrapDetect", "rollTrapDetectDice"],
+                "トラップ解除判定": ["rollTrapRelease", "rollTrapReleaseDice"],
+                "危険感知判定": ["rollDangerDetect", "rollDangerDetectDice"],
+                "エネミー識別判定": ["rollEnemyLore", "rollEnemyLoreDice"],
+                "アイテム鑑定判定": ["rollAppraisal", "rollAppraisalDice"],
+                "魔術判定": ["rollMagic", "rollMagicDice"],
+                "呪歌判定": ["rollSong", "rollSongDice"],
+                "錬金術判定": ["rollAlchemy", "rollAlchemyDice"]
+            };
+
+            let willOverwrite = false;
+
+            if (confirmOverwrite) {
+                for (const [label] of Object.entries(rollMap)) {
+                    const existing = structure.roll[label];
+                    if (existing?.fixed || existing?.dice) {
+                        willOverwrite = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!confirmOverwrite || !willOverwrite || confirm('既存の判定データを上書きしてもいいですか？')) {
+                for (const [label, [fixedKey, diceKey]] of Object.entries(rollMap)) {
+                    structure.roll[label] = {
+                        fixed: ytData[fixedKey] ?? '',
+                        dice: ytData[diceKey] ?? ''
+                    };
+                }
+            }
+        }
+
+        function applyMemoFromYtData() {
+            if (!ytData) return;
+
+            const mapping = {
+                "PL": "playerName",
+                "CL": "level",
+                "メインクラス": "classMain",
+                "サポートクラス": "classSupport",
+                "年齢": "age",
+                "性別": "gender",
+                "種族": "race",
+                "出自": "lifepathOrigin",
+                "境遇": "lifepathExperience",
+                "目的": "lifepathMotive",
+                "ギルド": "guildName"
+            };
+
+            const template = structure.legend.memo || '';
+            let filled = template.replace(/{{(.*?)}}/g, (_, key) => {
+                const jsonKey = mapping[key];
+                return jsonKey ? (ytData[jsonKey] ?? '') : '';
+            });
+
+            // 誓約チェック
+            if (ytData.geis1Name) {
+                const confirmed = confirm("誓約をキャラクターメモに追加しますか？");
+                if (confirmed) {
+                    const num = parseInt(ytData.geisesNum) || 0;
+                    let geisText = '●誓約\n';
+                    for (let i = 1; i <= num; i++) {
+                        const name = ytData[`geis${i}Name`] ?? '';
+                        const note = ytData[`geis${i}Note`] ?? '';
+                        geisText += name + '\n' + note + '\n';
+                    }
+                    filled += '\n\n' + geisText.trim(); // 最後に余分な空行防止でtrim
+                }
+            }
+
+            structure.memo = filled;
+        }
+
+        function determineTiming(rawTiming) {
+            if (!rawTiming || rawTiming.includes("パッシブ")) return null;
+            if (rawTiming.includes("《")) return "《》";
+            for (const timing of timingOptions) {
+                if (!timing) continue;
+                if (rawTiming.includes(timing)) return timing;
+            }
+            return "";
+        }
+
+
+        function applySkillsFromYtData() {
+            if (!ytData) return;
+
+            const num = parseInt(ytData.skillsNum) || 0;
+            const foldersToAdd = [];
+            const existingNames = new Set((structure.folders || []).map(f => (f.name || '').trim()));
+            let skipped = 0;
+
+            for (let i = 1; i <= num; i++) {
+                const prefix = `skill${i}`;
+                const timingRaw = ytData[`${prefix}Timing`] ?? "";
+                const timingFix = determineTiming(timingRaw);
+
+                if (timingFix === null) continue; // パッシブや空欄はスキップ
+
+                const folderName = (ytData[`${prefix}Name`] || `スキル${i}`).trim() || `スキル${i}`;
+
+                // 同名チェック：既にあるならスキップ
+                if (existingNames.has(folderName)) {
+                    skipped++;
+                    continue;
+                }
+
+
+                const folder = {
+                    name: folderName,
+                    hidden: false,
+                    timing: timingFix,
+                    files: []
+                };
+
+                // --- 宣言ファイル ---
+                const declarationTemplate = structure.legend.declaration;
+                let declarationText = declarationTemplate
+                    .replace(/{{スキル名}}/g, ytData[`${prefix}Name`] ?? '')
+                    .replace(/{{SL}}/g, ytData[`${prefix}Lv`] ?? '')
+                    .replace(/{{タイミング}}/g, ytData[`${prefix}Timing`] ?? '')
+                    .replace(/{{判定}}/g, ytData[`${prefix}Roll`] ?? '')
+                    .replace(/{{対象}}/g, ytData[`${prefix}Target`] ?? '')
+                    .replace(/{{射程}}/g, ytData[`${prefix}Range`] ?? '')
+                    .replace(/{{使用条件}}/g, ytData[`${prefix}Reqd`] ?? '')
+                    .replace(/{{コスト}}/g, ytData[`${prefix}Cost`] ?? '')
+                    .replace(/{{分類S}}/g, ytData[`${prefix}Category`] ?? '')
+                    .replace(/{{分類L}}/g, ytData[`${prefix}Category`] ? `分類：${ytData[`${prefix}Category`]}` : '')
+                    .replace(/{{効果}}/g, ytData[`${prefix}Note`] ?? '');
+
+                folder.files.push({
+                    name: declarationText,
+                    attr: '宣言',
+                    sub: []
+                });
+
+                // --- 変動ファイル ---
+                const cost = parseInt(ytData[`${prefix}Cost`]);
+                if (!isNaN(cost) && cost >= 1) {
+                    folder.files.push({
+                        name: `:MP-${cost}`,
+                        attr: '変動',
+                        sub: []
+                    });
+                }
+
+                // --- 対象ファイル ---
+                const target = ytData[`${prefix}Target`] ?? '';
+                if (target && target !== '自身') {
+                    folder.files.push({
+                        name: `対象：`,
+                        attr: '対象',
+                        sub: []
+                    });
+                }
+
+                // --- 判定ファイル ---
+                const roll = ytData[`${prefix}Roll`] ?? '';
+                if (roll && roll !== '自動成功') {
+                    const rollAttrs = ['筋力', '器用', '敏捷', '感知', '知力', '精神', '幸運'];
+                    const rollName = rollAttrs.includes(roll) ? `${roll}判定` : roll;
+
+                    const template = structure.legend.roll;
+                    const base = structure.roll[rollName] ?? { fixed: '', dice: '' };
+                    const rollText = template
+                        .replace(/{{固定値}}/g, base.fixed ?? '')
+                        .replace(/{{ダイス数}}/g, base.dice ?? '')
+                        .replace(/{{判定名}}/g, rollName);
+
+                    folder.files.push({
+                        name: rollText,
+                        attr: '判定',
+                        sub: []
+                    });
+                }
+
+                foldersToAdd.push(folder);
+                existingNames.add(folderName);
+            }
+
+            if (foldersToAdd.length) {
+                structure.folders.push(...foldersToAdd);
+            }
+            alert(`スキル読込：${foldersToAdd.length}件追加、${skipped}件スキップ（同名）`);
+        }
+
+        function timingToKey(timingStr) {
+            // 空・null・undefined は「（未設定）」に寄せる
+            if (!timingStr || timingStr.trim() === '') return UNSET_TIMING_LABEL;
+            return timingStr;
+        }
+
+
+        function sortFoldersByTiming() {
+            // ユーザー定義順（未設定ならデフォルト）
+            const order = (structure.timingOrder && structure.timingOrder.length)
+                ? structure.timingOrder
+                : [
+                    "アイテム", "戦闘前", "セットアップ", "イニシアチブ", "フリー", "ムーブ",
+                    "レガシー", "マイナー", "メジャー", "判定の直前", "判定の直後",
+                    "リアクション", "DRの直前", "DRの直後", "効果参照", "《》",
+                    UNSET_TIMING_LABEL,
+                    "戦闘不能", "クリンナップ"
+                ];
+
+            const idx = (t) => {
+                const key = timingToKey(t);           // ← 空文字は（未設定）に
+                const i = order.indexOf(key);
+                return i !== -1 ? i : 999;            // 未登録は末尾
+            };
+
+            structure.folders.sort((a, b) => idx(a.timing) - idx(b.timing));
+        }
+
+        //計算からクリップボード
+
+        function buildCalcClipboardText(file) {
+            const header = `[>] ${file.name || '（名称未設定）'}`;
+
+            const lineFromSub = (sub) => {
+                const src = (sub.source && sub.source.trim()) || '由来不明';
+                const parts = [];
+                const dice = parseInt(sub.dice || 0) || 0;
+                const fixed = parseInt(sub.fixed || 0) || 0;
+                const extra = (sub.extra || '').trim();
+
+                if (dice !== 0) parts.push(`${dice}D`);
+                if (fixed !== 0) parts.push(`${fixed}`);
+                if (extra) parts.push(extra);
+
+                return `${src}：${parts.length ? parts.join('+') : '0'}`;
+            };
+
+            const lines = (file.sub || []).map(lineFromSub);
+
+            // 合計
+            const total = (file.sub || []).reduce((acc, s) => {
+                acc.dice += parseInt(s.dice || 0) || 0;
+                acc.fixed += parseInt(s.fixed || 0) || 0;
+                if (s.extra && s.extra.trim()) acc.extras.push(s.extra.trim());
+                return acc;
+            }, { dice: 0, fixed: 0, extras: [] });
+
+            const sumParts = [];
+            if (total.dice !== 0) sumParts.push(`${total.dice}D`);
+            if (total.fixed !== 0) sumParts.push(`${total.fixed}`);
+            if (total.extras.length) sumParts.push(total.extras.join('+'));
+
+            const sumLine = `合計：${sumParts.length ? sumParts.join('+') : '0'}`;
+
+            return [header, ...lines, sumLine, '[---]'].join('\n');
+        }
+
+
+
+        function copyCalcToClipboard(file) {
+            const text = buildCalcClipboardText(file);
+            if (!text) { alert('出力する内容がありません'); return; }
+            navigator.clipboard?.writeText(text).then(
+                () => alert('計算をコピーしました！'),
+                () => { // フォールバック
+                    const ta = document.createElement('textarea');
+                    ta.value = text; document.body.appendChild(ta);
+                    ta.select(); document.execCommand('copy');
+                    ta.remove();
+                    alert('計算をコピーしました！');
+                }
+            );
+        }
+
+        function buildCalcTotalExpr(file) {
+            const total = (file.sub || []).reduce((acc, s) => {
+                const d = parseInt(s.dice || 0) || 0;
+                const f = parseInt(s.fixed || 0) || 0;
+                const e = (s.extra || '').trim();
+                if (d) acc.dice += d;
+                if (f) acc.fixed += f;
+                if (e) acc.extras.push(e);
+                return acc;
+            }, { dice: 0, fixed: 0, extras: [] });
+
+            const parts = [];
+            if (total.dice) parts.push(`${total.dice}D`);
+            if (total.fixed) parts.push(`${total.fixed}`);
+            if (total.extras.length) parts.push(total.extras.join('+'));
+
+            return parts.length ? parts.join('+') : '0';
+        }
+
+
+
+
+        function updateChatPreview() {
+            const lines = [];
+
+            for (const folder of structure.folders) {
+                for (const file of folder.files) {
+                    if (file.attr === '計算') continue;
+                    if (file.enabled === false) continue;
+                    if (!file.name || file.name.trim() === '') continue;
+                    lines.push(file.name.trim());
+                }
+            }
+
+            const preview = lines.join('\n');
+            const previewBox = document.getElementById('chatPreview');
+
+            // フォーカスを邪魔しないようにスクロール位置や選択範囲は保持
+            const wasFocused = document.activeElement === previewBox;
+
+            previewBox.value = preview;
+
+            if (!wasFocused) {
+                previewBox.scrollTop = 0;
+            }
+        }
+
+        // 出力処理
+        function exportCharacter() {
+            updateChatPreview(); // 念のため再更新
+
+            const name = structure.name || "";
+            const playerName = ytData?.playerName || "";
+            const memo = structure.memo || "";
+            const initiative = structure.initiative.value + (structure.initiative.plusPointOne ? 0.1 : 0);
+            const externalUrl = document.getElementById('ytsheetUrl').value.trim();
+            const color = structure.color || "#888888";
+            const commands = document.getElementById('chatPreview').value;
+
+            const status = structure.status.map(s => ({
+                label: s.label,
+                value: s.current,
+                max: s.max
+            }));
+
+            const params = structure.params.map(p => ({
+                label: p.label,
+                value: p.value
+            }));
+
+            const output = {
+                kind: "character",
+                data: {
+                    name,
+                    playerName,
+                    memo,
+                    initiative,
+                    externalUrl,
+                    status,
+                    params,
+                    secret: false,
+                    invisible: false,
+                    hideStatus: false,
+                    color,
+                    commands
+                }
+            };
+
+            const jsonStr = JSON.stringify(output, null, 2); // 見やすさのため2スペース整形
+            document.getElementById('exportJsonBox').value = jsonStr;
+
+            // クリップボードにコピー
+            navigator.clipboard.writeText(jsonStr)
+                .then(() => {
+                    alert("クリップボードにコピーしました！");
+                })
+                .catch(() => {
+                    alert("コピーに失敗しました。下のテキスト欄から手動でコピーしてください。");
+                });
+        }
+
+
+
+        // ====== 保存まわりユーティリティ ======
+        const SAVES_KEY = 'ar2eCmaker:saves:v1'; // 端末ごとにlocalStorage保管
+
+        const uuid = () => (crypto?.randomUUID ? crypto.randomUUID() : 'id_' + Date.now() + '_' + Math.random().toString(16).slice(2));
+
+        function ymdhm(d = new Date()) {
+            const z = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;
+        }
+
+        function safeFileName(s) {
+            return (s || 'noname').replace(/[\\/:*?"<>|]/g, '_').trim() || 'noname';
+        }
+
+        function getSaves() {
+            try { return JSON.parse(localStorage.getItem(SAVES_KEY)) || []; } catch { return []; }
+        }
+        function setSaves(arr) {
+            localStorage.setItem(SAVES_KEY, JSON.stringify(arr));
+        }
+
+        function makeSnapshot() {
+            return {
+                version: 1,
+                ytsheetUrl: (document.getElementById('ytsheetUrl')?.value || '').trim(),
+                structure
+            };
+        }
+
+        function applySnapshot(data) {
+            if (!data || !data.structure) return alert('不正なデータ');
+            // 既存参照を壊さないようにマージ
+            Object.keys(structure).forEach(k => delete structure[k]);
+            Object.assign(structure, data.structure);
+            const urlEl = document.getElementById('ytsheetUrl');
+            if (urlEl) urlEl.value = data.ytsheetUrl || '';
+            render();
+        }
+
+        function saveCurrentToBrowser() {
+            const now = new Date();
+            const name = `${structure.name || 'noname'}_${ymdhm(now)}`;
+            const entry = {
+                id: uuid(),
+                name,                // 表示名（キャラ名＋日時）
+                createdAt: now.toISOString(),
+                snapshot: makeSnapshot()
+            };
+            const saves = getSaves();
+            saves.unshift(entry);  // 先頭に
+            setSaves(saves);
+            alert('保存しました：' + name);
+            renderSaveList(); // 表示更新
+        }
+
+        function deleteByIds(ids) {
+            const set = new Set(ids);
+            setSaves(getSaves().filter(x => !set.has(x.id)));
+        }
+
+        function exportSelected(ids) {
+            const pick = getSaves().filter(x => ids.includes(x.id));
+            if (!pick.length) return alert('選択が空です');
+            const blob = new Blob([JSON.stringify({ version: 1, items: pick }, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${safeFileName(structure.name || 'ar2eCmaker')}_saves_${Date.now()}.json`;
+            document.body.appendChild(a); a.click(); a.remove();
+            URL.revokeObjectURL(a.href);
+        }
+
+        function importFromJsonFile(file, cb) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const obj = JSON.parse(reader.result);
+                    const items = Array.isArray(obj) ? obj : (obj?.items || []);
+                    if (!Array.isArray(items) || !items.length) return alert('中身が空です');
+                    // 既存とマージ（ID被りは新IDに振り直して追加）
+                    const existing = getSaves();
+                    const existingIds = new Set(existing.map(x => x.id));
+                    const toAdd = items.map(x => {
+                        const base = { id: x.id, name: x.name, createdAt: x.createdAt, snapshot: x.snapshot };
+                        if (!base.snapshot) return null;
+                        if (!base.id || existingIds.has(base.id)) base.id = uuid();
+                        return base;
+                    }).filter(Boolean);
+                    setSaves([...toAdd, ...existing]); // 先頭に追加
+                    alert(`読み込み完了：${toAdd.length}件追加`);
+                    cb && cb();
+                } catch (e) {
+                    console.error(e);
+                    alert('JSON解析に失敗：' + e.message);
+                }
+            };
+            reader.onerror = () => alert('ファイル読み込みエラー');
+            reader.readAsText(file, 'utf-8');
+        }
+
+        function renderSaveList() {
+            const host = document.getElementById('saveList');
+            if (!host) return;
+            const saves = getSaves();
+            if (!saves.length) {
+                host.innerHTML = '<div style="opacity:.7;">保存はまだありません</div>';
+                return;
+            }
+            // 表
+            const rows = saves.map(s => {
+                const date = new Date(s.createdAt);
+                const when = isNaN(date) ? s.createdAt : ymdhm(date);
+                return `
+      <div class="save-row" style="display:flex; gap:8px; align-items:center; padding:6px 4px; border-bottom:1px solid #eee;">
+        <input type="checkbox" name="saveRowCheck" value="${s.id}">
+        <div style="min-width:12em; font-weight:bold;">${escapeHtml(s.name)}</div>
+        <div style="opacity:.75;">${escapeHtml(when)}</div>
+      </div>`;
+            }).join('');
+            host.innerHTML = rows;
+        }
+
+        function getCheckedSaveIds() {
+            return Array.from(document.querySelectorAll('input[name="saveRowCheck"]:checked')).map(el => el.value);
+        }
+
+        // 簡易エスケープ
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
+        }
+
+
+
+        render();
+    </script>
+</body>
+
+</html>
