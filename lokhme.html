@@ -1,45 +1,47 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <title>草原ツール</title>
   <style>
     body {
       font-family: sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: start;
-      gap: 20px;
       padding: 40px;
     }
+
     textarea {
       width: 300px;
       height: 400px;
       white-space: pre;
     }
+
     button {
       height: 40px;
       padding: 0 20px;
     }
   </style>
 </head>
+
 <body>
-  <div style="position: absolute; top: 10px; left: 10px; right: 10px; padding: 10px; background: #f0f0f0; border-radius: 8px;">
-    <h2>草原ツールの使い方</h2>
+  <div>
+    <h2>草原ツール</h2>
     <p>
-      左の入力欄にテキストを貼り付け、「草原 ▶︎」ボタンを押すと、
-      <code>:MP-数字</code> の行だけ数字が2減算されて右側に表示されます。<br>
+      左の入力欄にテキストを入力し、「草原 ▶︎」ボタンを押すと<br>
+      <code>:MP-数字</code> の行だけ数字が2減算され、右側に出力されます。<br>
       （ただし1未満にはなりません）
     </p>
   </div>
 
-  <textarea id="input" placeholder="ここに入力"></textarea>
+  <div style="display: flex; gap: 20px; margin-top: 20px;">
+    <textarea id="input" placeholder="ここに入力"></textarea>
 
-  <div>
-    <button onclick="convertText()">草原 ▶︎</button>
+    <div>
+      <button onclick="convertText()">草原 ▶︎</button>
+    </div>
+
+    <textarea id="output" readonly placeholder="ここに出力"></textarea>
   </div>
-
-  <textarea id="output" readonly placeholder="ここに出力"></textarea>
 
   <script>
     function convertText() {
@@ -60,4 +62,5 @@
   </script>
 
 </body>
+
 </html>
