@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>スペック共有支援ツール</title>
+  <style>
+    :root { --bg:#0b0c10; --panel:#151821; --ink:#e8ecf1; --muted:#9aa3af; --brand:#7c9cff; --warn:#ff6b6b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", Arial, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; background: var(--bg); color: var(--ink); }
+    .wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+    h1 { font-size: 20px; margin: 0 0 12px; font-weight: 700; letter-spacing: .02em; }
+    .bar { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+    input[type="url"], textarea { width: 100%; background: var(--panel); border: 1px solid #232836; color: var(--ink); border-radius: 10px; padding: 10px 12px; outline: none; }
+    input[type="url"]:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 2px #7c9cff40; }
+    textarea { font-size: 16px; line-height: 1.6; }
+    button { cursor: pointer; border: 0; background: var(--brand); color: #0a0e1a; font-weight: 700; padding: 10px 14px; border-radius: 10px; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    label { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); user-select: none; }
+    .chkrow { margin: 12px 0 16px; }
+
+    .grid { display: grid; grid-template-columns: 1.2fr .8fr; grid-template-rows: auto auto; gap: 12px; }
+    .col-left { grid-row: 1 / span 2; }
+
+    .panel { display: grid; gap: 8px; }
+    .panel .head { display: flex; align-items: center; justify-content: space-between; }
+    .panel .title { font-weight: 700; letter-spacing: .02em; }
+
+    .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace; }
+    .footer { color: var(--muted); font-size: 12px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>スペック共有支援ツール</h1>
+
+    <div class="bar">
+      <input id="urlInput" type="url" placeholder="ゆとシートのキャラシURL（例：https://yutorize.2-d.jp/ytsheet/ar2e/?id=...）" />
+      <button id="loadBtn">読込</button>
+    </div>
+
+    <div class="chkrow">
+      <label><input id="hpPlus10" type="checkbox" checked />HPに+10する。</label>
+    </div>
+
+    <div class="grid">
+      <div class="col-left">
+        <textarea id="tx1" rows="22" class="mono" placeholder="ここにスペックが表示されます。"></textarea>
+      </div>
+
+      <div class="panel">
+        <div class="head">
+          <div class="title">シナリオ札</div>
+          <label><input id="chkBreakScenario" type="checkbox" checked />改行表記（欄内追記は消えます。）</label>
+        </div>
+        <textarea id="tx2" rows="10" class="mono" placeholder="ここにシナリオ札が表示されます。"></textarea>
+      </div>
+
+      <div class="panel">
+        <div class="head">
+          <div class="title">シーン札</div>
+          <label><input id="chkBreakScene" type="checkbox" checked />改行表記（欄内追記は消えます。）</label>
+        </div>
+        <textarea id="tx3" rows="10" class="mono" placeholder="ここにシーン札が表示されます。"></textarea>
+      </div>
+    </div>
+
+    <div class="footer">本作は、「著：菊池たけし／F.E.A.R」が権利を有する『アリアンロッドRPG2E』の二次創作作品です。
+(C)F.E.A.R. 「アリアンロッドRPG 2E」</div>
+  </div>
+
+  <script>
+    const $ = sel => document.querySelector(sel);
+
+    // データの保持（読込後に動的整形するため）
+    let scenosData = [];
+    let scenesData = [];
+
+    // 初期テキスト（テンプレートリテラルで安全に複数行）
+    const DEFAULT_TX1 = `PC名：
+やりたいRP方向：
+HP：
+防御力：／
+行動値：
+移動力：m；Sq
+回避性能：；
+シナリオ札：
+シーン札：
+
+命中：；
+ダメージ：；
+カバー性能：
+
+軽減性能：；
+回復性能：；
+
+識別能力：；
+
+支援性能：`;
+
+    // 初期テキスト
+    $('#tx1').value = DEFAULT_TX1;
+
+    function isUrlValid(value){
+      try { const u = new URL(value); return ['http:', 'https:'].includes(u.protocol); } catch(e){ return false; }
+    }
+
+    function ceilDiv(a, b){ return Math.ceil(Number(a||0) / Number(b)); }
+
+    function fmtExpect(fixed, dice){
+      const f = Number(fixed||0); const d = Number(dice||0);
+      const exp = f + d * 3.5;
+      const exp10 = Math.round(exp * 10) / 10; // 小数1桁に四捨五入
+      const expStr = Number.isInteger(exp10) ? String(exp10|0) : exp10.toFixed(1);
+      return `${f}+${d}D；${expStr}`;
+    }
+
+    function confirmOverwriteIfNeeded(){
+      const t1 = $('#tx1').value.trim();
+      const t2 = $('#tx2').value.trim();
+      const t3 = $('#tx3').value.trim();
+      if(t1 || t2 || t3){ return confirm('テキストボックスに内容があります。上書きしますか？'); }
+      return true;
+    }
+
+    function renderBoxes(){
+      const brScenario = $('#chkBreakScenario').checked;
+      const brScene = $('#chkBreakScene').checked;
+      $('#tx2').value = (brScenario ? scenosData.join('\n') : scenosData.join(' '));
+      $('#tx3').value = (brScene ? scenesData.join('\n') : scenesData.join(' '));
+    }
+
+    async function handleLoad(){
+      const url = $('#urlInput').value.trim();
+      if(!isUrlValid(url)) { alert('URLが無効です。正しいURLを入力してください。'); return; }
+      if(!confirmOverwriteIfNeeded()) return;
+
+      const jsonUrl = url + (url.includes('?') ? '&mode=json' : '?mode=json');
+
+      $('#loadBtn').disabled = true; $('#loadBtn').textContent = '読込中…';
+
+      try {
+        const res = await fetch(jsonUrl, { cache: 'no-store' });
+        if(!res.ok){ throw new Error('HTTP ' + res.status); }
+        const data = await res.json();
+
+        // ①～⑩ 取得
+        const name = data.characterName ?? '';
+        let hp = Number(data.hpTotal ?? 0);
+        if($('#hpPlus10').checked){ hp += 10; }
+
+        const pDef = Number(data.battleTotalDef ?? 0);
+        const mDef = Number(data.battleTotalMDef ?? 0);
+        const ini = Number(data.battleTotalIni ?? 0);
+        const moveM = Number(data.battleTotalMove ?? 0);
+        const moveSq = ceilDiv(moveM, 5);
+
+        const eva = fmtExpect(data.battleTotalEva, data.battleDiceEva);
+        const acc = fmtExpect(data.battleTotalAcc, data.battleDiceAcc);
+        const atk = fmtExpect(data.battleTotalAtk, data.battleDiceAtk);
+        const lore = fmtExpect(data.rollEnemyLore, data.rollEnemyLoreDice);
+
+        // 札・カバー性能抽出
+        const skillsNum = Number(data.skillsNum ?? 0);
+        scenosData = [];
+        scenesData = [];
+        const coverParts = [];
+        const COVER_KEYS = ['カバームーブ', 'アラウンドカバー', 'パラディオン'];
+
+        for(let i=1; i<=skillsNum; i++){
+          const nameK = data[`skill${i}Name`] ?? '';
+          const lvK = data[`skill${i}Lv`];
+          const reqK = data[`skill${i}Reqd`] ?? '';
+          const lvDisp = (lvK === undefined || lvK === null || lvK === '') ? '' : String(lvK);
+          const chip = `《${nameK}》${lvDisp}`;
+
+          if(COVER_KEYS.some(k => nameK.includes(k))){ coverParts.push(chip); }
+          if(reqK.includes('シナリオ')){ scenosData.push(chip); }
+          if(reqK.includes('シーン')){ scenesData.push(chip); }
+        }
+
+        // テキスト1 組み立て
+        const tx1 = `PC名：${name}
+やりたいRP方向：
+HP：${hp}
+防御力：${pDef}／${mDef}
+行動値：${ini}
+移動力：${moveM}m；${moveSq}Sq
+回避性能：${eva}
+シナリオ札：
+シーン札：
+
+命中：${acc}
+ダメージ：${atk}
+カバー性能：${coverParts.join(' ')}
+
+軽減性能：；
+回復性能：；
+
+識別能力：${lore}
+
+支援性能：`;
+
+        $('#tx1').value = tx1;
+        renderBoxes();
+
+      } catch(err){
+        console.error(err);
+        alert('読込に失敗しました。URLやネットワーク、CORS設定をご確認ください。\nエラー: ' + (err.message || err));
+      } finally {
+        $('#loadBtn').disabled = false; $('#loadBtn').textContent = '読込';
+      }
+    }
+
+    $('#loadBtn').addEventListener('click', handleLoad);
+    $('#chkBreakScenario').addEventListener('change', renderBoxes);
+    $('#chkBreakScene').addEventListener('change', renderBoxes);
+  </script>
+</body>
+</html>
