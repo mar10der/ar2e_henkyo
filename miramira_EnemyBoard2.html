@@ -1,0 +1,1170 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>AR2Eエネミーボード(ver.2 )</title>
+    <style>
+        :root {
+            --menu-width: 120px;
+            --enemy-bg: #ffffff;
+            --pc-bg: #f4f9ff;
+            --border: #a8a8a8;
+            --gap: 0.5em;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #ddd;
+            background: #fafafa;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        header h1 .rights {
+            font-size: 14px;
+            font-weight: 400;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+
+        #workarea {
+            min-height: 0;
+            flex: 1;
+            display: flex;
+        }
+
+        #menu {
+            width: var(--menu-width);
+            background: #eee;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-right: 1px solid #ddd;
+        }
+
+        #menu button {
+            width: 100%;
+            padding: 8px 4px;
+        }
+
+        #menu button.inactive {
+            opacity: 0.45;
+        }
+
+        #boards {
+            flex: 1;
+            min-width: 0;
+            overflow-x: auto;
+            padding: 16px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .board {
+            width: 260px;
+            flex-shrink: 0;
+            border: 1px solid var(--border);
+            background: var(--enemy-bg);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .board.pc-board {
+            width: 195px;
+            background: var(--pc-bg);
+        }
+
+        .board.deleted-board {
+            opacity: 0.65;
+        }
+
+        .board input,
+        .board button,
+        .board select {
+            font-size: 14px;
+        }
+
+        .drag-handle {
+            cursor: grab;
+            user-select: none;
+            text-align: center;
+            background: #d6d6d6;
+            padding: 4px 0;
+            font-weight: 700;
+        }
+
+        .name-row input {
+            width: 100%;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .row-4 {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: var(--gap);
+            align-items: center;
+        }
+
+        .row-3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: var(--gap);
+            align-items: center;
+        }
+
+        .row-4 input,
+        .row-4 button,
+        .row-3 input,
+        .row-3 button,
+        .row-4 select {
+            width: 100%;
+            text-align: center;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: var(--gap);
+            align-items: center;
+        }
+
+        .grid input,
+        .grid button {
+            width: 100%;
+            text-align: center;
+        }
+
+        .hp-box {
+            text-align: center;
+        }
+
+        .hp-now {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .hp-max-row input {
+            width: 120px;
+            text-align: center;
+        }
+
+        .history {
+            border-top: 1px solid #ccc;
+            padding-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .history-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .history-row input,
+        .history-row select {
+            text-align: center;
+        }
+
+        .board-hidden {
+            display: none !important;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        #load-modal {
+            z-index: 10001;
+        }
+
+        #manage-modal {
+            z-index: 10000;
+        }
+
+        .modal-inner {
+            width: min(720px, 92vw);
+            max-height: 86vh;
+            overflow: hidden;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-head,
+        .modal-footer {
+            padding: 12px;
+            border-bottom: 1px solid #ececec;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-footer {
+            border-bottom: none;
+            border-top: 1px solid #ececec;
+            justify-content: flex-end;
+        }
+
+        .modal-body {
+            padding: 12px;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .save-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .save-list li {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .save-list li.selected {
+            background: #eef5ff;
+            outline: 2px solid #4a90e2;
+        }
+
+        .save-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .panel-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border: 1px solid #e3e3e3;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .panel-section h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .radio-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .danger {
+            background: #c9392b;
+            color: #fff;
+            border: none;
+        }
+
+        .ghost {
+            background: #f5f5f5;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1>AR2E エネミーボード(ver.2)
+        <span class="rights">本作は、「著：菊池たけし／F.E.A.R」が権利を有する『アリアンロッドRPG2E』の二次創作作品です。(C)F.E.A.R. 「アリアンロッドRPG 2E」</span>
+    </h1>
+    </header>
+
+    <div id="workarea">
+        <div id="menu">
+            <button id="btn-add-pc" onclick="addPcBoard()">PC追加</button>
+            <button id="btn-add-enemy" onclick="addEnemyBoard()">敵追加</button>
+            <button id="btn-toggle-pc" onclick="toggleShowPc()">PC表示</button>
+            <button id="btn-toggle-enemy" onclick="toggleShowEnemy()">敵表示</button>
+            <button id="btn-toggle-deleted" onclick="toggleShowDeleted()">墓地</button>
+            <button id="btn-sort-init" onclick="sortVisibleBoardsByInit()">行動値</button>
+            <button id="btn-manage" onclick="openManageModal()">管理</button>
+        </div>
+        <div id="boards"></div>
+    </div>
+
+    <input id="json-file-input" type="file" accept=".json,application/json" hidden>
+
+    <div id="load-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="load-modal-title">
+        <div class="modal-inner">
+            <div class="modal-head">
+                <h2 id="load-modal-title">ローカルストレージ読込</h2>
+                <button type="button" onclick="closeLoadDialog()">閉じる</button>
+            </div>
+            <div class="modal-body">
+                <ul id="load-list" class="save-list"></ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="confirmLoadSelected()">読み込み</button>
+                <button type="button" onclick="closeLoadDialog()">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="manage-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="manage-modal-title">
+        <div class="modal-inner">
+            <div class="modal-head">
+                <h2 id="manage-modal-title">管理</h2>
+                <button type="button" onclick="closeManageModal()">閉じる</button>
+            </div>
+            <div class="modal-body">
+                <section class="panel-section">
+                    <h3>消去カテゴリ</h3>
+                    <div class="radio-row">
+                        <label><input type="radio" name="delete-scope" value="all" checked>全キャラクター</label>
+                        <label><input type="radio" name="delete-scope" value="enemy">エネミー</label>
+                        <label><input type="radio" name="delete-scope" value="pc">PC</label>
+                    </div>
+                    <div class="action-row">
+                        <button type="button" class="danger" onclick="runDeleteAction('purge')">全消去</button>
+                        <button type="button" class="ghost" onclick="runDeleteAction('purge_deleted')">墓地から消去</button>
+                        <button type="button" class="ghost" onclick="runDeleteAction('send_deleted')">墓地に送る</button>
+                    </div>
+                </section>
+
+                <section class="panel-section">
+                    <h3>保存カテゴリ</h3>
+                    <div class="radio-row">
+                        <label><input type="radio" name="save-mode" value="local" checked>ローカルストレージ</label>
+                        <label><input type="radio" name="save-mode" value="file">JSONファイル</label>
+                        <label><input type="radio" name="save-mode" value="clipboard">クリップボード</label>
+                    </div>
+                    <div class="action-row">
+                        <button type="button" onclick="saveFromManage()">保存</button>
+                    </div>
+                </section>
+
+                <section class="panel-section">
+                    <h3>読み込みカテゴリ</h3>
+                    <div class="radio-row">
+                        <label><input type="radio" name="load-mode" value="local" checked>ローカルストレージ</label>
+                        <label><input type="radio" name="load-mode" value="file">JSONファイル</label>
+                        <label><input type="radio" name="load-mode" value="clipboard">クリップボード</label>
+                    </div>
+                    <div class="action-row">
+                        <button type="button" onclick="loadFromManage('append')">追加読み込み</button>
+                        <button type="button" onclick="loadFromManage('replace')">上書き読み込み</button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DAMAGE_TYPES = ['物理', '魔法', '貫通', 'ロス'];
+        const LS_KEY = 'ar2e_enemy_saves';
+
+        let boardId = 0;
+        let pendingLoadMode = 'append';
+        let filterState = {
+            showPC: true,
+            showEnemy: true,
+            showDeleted: false,
+        };
+
+        function defaultEnemyData() {
+            return {
+                name: '',
+                category: '',
+                element: '',
+                maxHp: 0,
+                defenses: { 物理: 0, 魔法: 0, 貫通: 0, ロス: 0 },
+                initDefenses: { 物理: 0, 魔法: 0, 貫通: 0, ロス: 0 },
+                history: [],
+                ident: '',
+                koma: '',
+                identify: 0,
+                init: 0,
+                isPC: false,
+                isDeleted: false,
+            };
+        }
+
+        function defaultPcData() {
+            return {
+                ...defaultEnemyData(),
+                isPC: true,
+            };
+        }
+
+        function createBoard(data = {}, options = {}) {
+            const merged = normalizeBoardData(options.isPC ? { ...defaultPcData(), ...data } : { ...defaultEnemyData(), ...data });
+            const board = document.createElement('div');
+            board.className = `board ${merged.isPC ? 'pc-board' : 'enemy-board'}`;
+            board.dataset.boardId = `board-${boardId++}`;
+            board.dataset.hp = String(merged.maxHp || 0);
+            board.dataset.ident = merged.ident || '';
+            board.dataset.koma = merged.koma || '';
+            board.dataset.isPc = String(!!merged.isPC);
+            board.dataset.isDeleted = String(!!merged.isDeleted);
+            board.dataset.fieldsVisible = 'false';
+
+            board.innerHTML = merged.isPC ? buildPcBoardHtml(merged) : buildEnemyBoardHtml(merged);
+            attachBoardEvents(board);
+            hydrateBoard(board, merged);
+            document.getElementById('boards').appendChild(board);
+            refreshBoardAppearance(board);
+            applyBoardFilters();
+            return board;
+        }
+        function buildEnemyBoardHtml(data) {
+            return `
+                <div class="drag-handle">≡</div>
+                <div class="name-row">
+                    <input type="text" class="name-input" placeholder="名前" value="${escapeAttr(data.name)}">
+                </div>
+                <div class="row-4 top-row">
+                    <button type="button" class="copy-arrow-btn">⇒</button>
+                    <button type="button" class="copy-name-btn">名前</button>
+                    <button type="button" class="toggle-details-btn">詳細</button>
+                    <input type="number" class="init-input" placeholder="行動値" step="0.1" value="${escapeAttr(data.init)}">
+                </div>
+                <div class="row-4 info-row">
+                    <input type="text" class="category-input" placeholder="分類" value="${escapeAttr(data.category)}">
+                    <input type="text" class="element-input" placeholder="属性" value="${escapeAttr(data.element)}">
+                    <button type="button" class="duplicate-btn">複製</button>
+                    <button type="button" class="delete-btn">×</button>
+                </div>
+                <div class="section battle-section">
+                    <div class="grid">
+                        ${DAMAGE_TYPES.map(type => `<input type="number" class="dmg-input" data-type="${type}" placeholder="0">`).join('')}
+                    </div>
+                    <div class="grid">
+                        ${DAMAGE_TYPES.map(type => `<button type="button" class="register-damage-btn" data-type="${type}">${type}</button>`).join('')}
+                    </div>
+                    <div class="grid cur-def-row">
+                        ${DAMAGE_TYPES.map(type => `<input type="number" class="cur-def" data-type="${type}" placeholder="現在防御" value="${escapeAttr(data.defenses[type] ?? 0)}">`).join('')}
+                    </div>
+                    <div class="grid init-def-row">
+                        ${DAMAGE_TYPES.map(type => `<input type="number" class="init-def" data-type="${type}" placeholder="初期防御" value="${escapeAttr(data.initDefenses[type] ?? 0)}">`).join('')}
+                    </div>
+                </div>
+                <div class="row-4 tools-row">
+                    <input type="number" class="identify-input" placeholder="識別値" step="1" value="${escapeAttr(data.identify)}">
+                    <button type="button" class="copy-ident-btn">識別</button>
+                    <button type="button" class="copy-koma-btn">コマ</button>
+                    <button type="button" class="clear-history-btn">AC</button>
+                </div>
+                <div class="hp-box">
+                    <div class="hp-now-row"><span class="hp-now">0</span></div>
+                    <div class="hp-max-row"><input type="number" class="max-hp-input" placeholder="最大HP" value="${escapeAttr(data.maxHp)}"></div>
+                </div>
+                <div class="history"></div>
+            `;
+        }
+
+        function buildPcBoardHtml(data) {
+            return `
+                <div class="drag-handle">≡</div>
+                <div class="name-row">
+                    <input type="text" class="name-input" placeholder="名前" value="${escapeAttr(data.name)}">
+                </div>
+                <div class="row-3 top-row-pc">
+                    <button type="button" class="copy-arrow-btn">⇒</button>
+                    <button type="button" class="copy-name-btn">名前</button>
+                    <input type="number" class="init-input" placeholder="行動値" step="0.1" value="${escapeAttr(data.init)}">
+                </div>
+                <div class="row-3 info-row-pc">
+                    <input type="text" class="category-input" placeholder="分類" value="${escapeAttr(data.category)}">
+                    <input type="text" class="element-input" placeholder="属性" value="${escapeAttr(data.element)}">
+                    <button type="button" class="delete-btn">×</button>
+                </div>
+            `;
+        }
+
+        function hydrateBoard(board, data) {
+            const historyRoot = board.querySelector('.history');
+            if (historyRoot) {
+                historyRoot.innerHTML = '';
+                (data.history || []).forEach(entry => historyRoot.appendChild(createHistoryRow(entry)));
+            }
+            if (!data.isPC) {
+                recalculateHP(board);
+                applyDetailsVisibility(board);
+            }
+        }
+
+        function attachBoardEvents(board) {
+            board.querySelector('.copy-arrow-btn')?.addEventListener('click', () => copyArrowName(board));
+            board.querySelector('.copy-name-btn')?.addEventListener('click', () => copyName(board));
+            board.querySelector('.delete-btn')?.addEventListener('click', () => handleDelete(board));
+            board.querySelector('.duplicate-btn')?.addEventListener('click', () => handleDuplicateOrRestore(board));
+            board.querySelector('.toggle-details-btn')?.addEventListener('click', e => toggleBoardFields(e.currentTarget));
+            board.querySelector('.copy-ident-btn')?.addEventListener('click', () => copyText(board.dataset.ident || ''));
+            board.querySelector('.copy-koma-btn')?.addEventListener('click', () => copyText(board.dataset.koma || ''));
+            board.querySelector('.clear-history-btn')?.addEventListener('click', () => clearHistoryAll(board));
+            board.querySelector('.max-hp-input')?.addEventListener('input', () => recalculateHP(board));
+
+            board.querySelectorAll('.register-damage-btn').forEach(button => {
+                button.addEventListener('click', () => registerDamage(board, button.dataset.type));
+            });
+
+            board.querySelectorAll('.dmg-input').forEach(input => {
+                input.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') registerDamage(board, input.dataset.type);
+                });
+            });
+        }
+
+        function createHistoryRow(entry = {}) {
+            const row = document.createElement('div');
+            row.className = 'history-row';
+            row.innerHTML = `
+                <input type="number" class="history-cur-def" value="${escapeAttr(entry.curDef ?? 0)}" style="width:48px">
+                <select class="history-type">
+                    ${DAMAGE_TYPES.map(type => `<option value="${type}"${entry.type === type ? ' selected' : ''}>${type}</option>`).join('')}
+                </select>
+                <input type="number" class="history-damage" value="${escapeAttr(entry.damage ?? 0)}" style="width:64px">
+                <button type="button" class="history-delete-btn">×</button>
+            `;
+            row.querySelectorAll('input, select').forEach(el => {
+                el.addEventListener('change', () => recalculateHP(row.closest('.board')));
+            });
+            row.querySelector('.history-delete-btn').addEventListener('click', () => {
+                const board = row.closest('.board');
+                row.remove();
+                recalculateHP(board);
+            });
+            return row;
+        }
+
+        function normalizeBoardData(input = {}) {
+            const base = input.isPC ? defaultPcData() : defaultEnemyData();
+            const normalized = {
+                ...base,
+                ...input,
+                maxHp: Number(input.maxHp ?? base.maxHp) || 0,
+                identify: parseInt(input.identify ?? base.identify, 10) || 0,
+                init: Number(input.init ?? base.init) || 0,
+                isPC: !!input.isPC,
+                isDeleted: !!input.isDeleted,
+            };
+
+            normalized.defenses = { ...base.defenses, ...(input.defenses || {}) };
+            normalized.initDefenses = { ...base.initDefenses, ...(input.initDefenses || {}) };
+            normalized.history = Array.isArray(input.history) ? input.history.map(entry => ({
+                type: DAMAGE_TYPES.includes(entry.type) ? entry.type : '物理',
+                damage: Number(entry.damage) || 0,
+                curDef: Number(entry.curDef) || 0,
+            })) : [];
+
+            return normalized;
+        }
+
+        function getBoardName(board) {
+            return board.querySelector('.name-input')?.value?.trim() || '';
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).catch(() => { });
+        }
+
+        function copyArrowName(board) {
+            copyText(`⇒${getBoardName(board)}`);
+        }
+
+        function copyName(board) {
+            copyText(getBoardName(board));
+        }
+
+        function toggleBoardFields(button) {
+            const board = button.closest('.board');
+            if (!board || board.dataset.isPc === 'true') return;
+            const visible = board.dataset.fieldsVisible !== 'false';
+            board.dataset.fieldsVisible = visible ? 'false' : 'true';
+            applyDetailsVisibility(board);
+        }
+
+        function applyDetailsVisibility(board) {
+            if (!board || board.dataset.isPc === 'true') return;
+            const visible = board.dataset.fieldsVisible !== 'false';
+            board.querySelector('.init-def-row')?.style.setProperty('display', visible ? 'grid' : 'none');
+            board.querySelector('.tools-row')?.style.setProperty('display', visible ? 'grid' : 'none');
+            board.querySelector('.hp-max-row')?.style.setProperty('display', visible ? 'block' : 'none');
+            const toggle = board.querySelector('.toggle-details-btn');
+            if (toggle) toggle.textContent = visible ? '隠す' : '詳細';
+        }
+
+        function registerDamage(board, type) {
+            if (!board || board.dataset.isPc === 'true') return;
+            const dmgInput = board.querySelector(`.dmg-input[data-type="${type}"]`);
+            const curDefInput = board.querySelector(`.cur-def[data-type="${type}"]`);
+            const damage = parseInt(dmgInput?.value, 10);
+            const curDef = parseInt(curDefInput?.value, 10);
+            if (Number.isNaN(damage) || Number.isNaN(curDef)) return;
+
+            const historyRoot = board.querySelector('.history');
+            historyRoot.prepend(createHistoryRow({ type, damage, curDef }));
+            dmgInput.value = '';
+            recalculateHP(board);
+        }
+
+        function recalculateHP(board) {
+            if (!board || board.dataset.isPc === 'true') return;
+            const maxHp = parseInt(board.querySelector('.max-hp-input')?.value, 10);
+            if (Number.isNaN(maxHp)) return;
+
+            let totalDamage = 0;
+            board.querySelectorAll('.history-row').forEach(row => {
+                const curDef = parseInt(row.querySelector('.history-cur-def')?.value, 10);
+                const type = row.querySelector('.history-type')?.value;
+                const damage = parseInt(row.querySelector('.history-damage')?.value, 10);
+                if (Number.isNaN(curDef) || Number.isNaN(damage)) return;
+                const diff = damage - curDef;
+                totalDamage += (type === 'ロス') ? diff : Math.max(0, diff);
+            });
+
+            const currentHp = Math.max(0, maxHp - totalDamage);
+            board.dataset.hp = String(currentHp);
+            const hpNow = board.querySelector('.hp-now');
+            if (hpNow) hpNow.textContent = String(currentHp);
+        }
+
+        function clearHistoryAll(board) {
+            if (!board) return;
+            board.querySelectorAll('.history-row').forEach(row => row.remove());
+            recalculateHP(board);
+        }
+        function handleDelete(board) {
+            if (!board) return;
+            if (board.dataset.isDeleted === 'true') {
+                board.remove();
+                applyBoardFilters();
+                return;
+            }
+            board.dataset.isDeleted = 'true';
+            refreshBoardAppearance(board);
+            applyBoardFilters();
+        }
+
+        function handleDuplicateOrRestore(board) {
+            if (!board) return;
+            if (board.dataset.isDeleted === 'true') {
+                board.dataset.isDeleted = 'false';
+                refreshBoardAppearance(board);
+                applyBoardFilters();
+                return;
+            }
+
+            const cloneData = collectBoardData(board);
+            const originalName = cloneData.name.trim();
+            const baseName = originalName.replace(/\(\d+\)$/, '');
+            let maxNum = 0;
+            document.querySelectorAll('.board .name-input').forEach(input => {
+                const name = (input.value || '').trim();
+                const match = name.match(/^(.*?)(?:\((\d+)\))?$/);
+                if (match && match[1] === baseName) {
+                    maxNum = Math.max(maxNum, match[2] ? parseInt(match[2], 10) : 0);
+                }
+            });
+            cloneData.name = baseName ? `${baseName}(${maxNum + 1})` : `(${maxNum + 1})`;
+            createBoard(cloneData, { isPC: cloneData.isPC });
+        }
+
+        function refreshBoardAppearance(board) {
+            const isPC = board.dataset.isPc === 'true';
+            const isDeleted = board.dataset.isDeleted === 'true';
+            board.classList.toggle('pc-board', isPC);
+            board.classList.toggle('enemy-board', !isPC);
+            board.classList.toggle('deleted-board', isDeleted);
+
+            const duplicateBtn = board.querySelector('.duplicate-btn');
+            if (duplicateBtn) duplicateBtn.textContent = isDeleted ? '戻す' : '複製';
+        }
+
+        function collectBoardData(board) {
+            const isPC = board.dataset.isPc === 'true';
+            const isDeleted = board.dataset.isDeleted === 'true';
+            const data = normalizeBoardData({
+                name: board.querySelector('.name-input')?.value || '',
+                category: board.querySelector('.category-input')?.value || '',
+                element: board.querySelector('.element-input')?.value || '',
+                maxHp: parseInt(board.querySelector('.max-hp-input')?.value, 10) || 0,
+                identify: parseInt(board.querySelector('.identify-input')?.value, 10) || 0,
+                init: parseFloat(board.querySelector('.init-input')?.value) || 0,
+                ident: board.dataset.ident || '',
+                koma: board.dataset.koma || '',
+                isPC,
+                isDeleted,
+            });
+
+            if (!isPC) {
+                board.querySelectorAll('.cur-def').forEach(input => {
+                    data.defenses[input.dataset.type] = parseInt(input.value, 10) || 0;
+                });
+                board.querySelectorAll('.init-def').forEach(input => {
+                    data.initDefenses[input.dataset.type] = parseInt(input.value, 10) || 0;
+                });
+                data.history = Array.from(board.querySelectorAll('.history-row')).map(row => ({
+                    type: row.querySelector('.history-type')?.value || '物理',
+                    damage: parseInt(row.querySelector('.history-damage')?.value, 10) || 0,
+                    curDef: parseInt(row.querySelector('.history-cur-def')?.value, 10) || 0,
+                }));
+            }
+
+            return data;
+        }
+
+        function collectAllBoards() {
+            return Array.from(document.querySelectorAll('.board')).map(collectBoardData);
+        }
+
+        function addEnemyBoard() {
+            createBoard(defaultEnemyData(), { isPC: false });
+        }
+
+        function addPcBoard() {
+            createBoard(defaultPcData(), { isPC: true });
+        }
+
+        function normalizeBoardsFromAny(input) {
+            if (Array.isArray(input)) {
+                return input.map(normalizeBoardFromAny).filter(Boolean);
+            }
+            const one = normalizeBoardFromAny(input);
+            return one ? [one] : null;
+        }
+
+        function normalizeBoardFromAny(obj) {
+            if (!obj || typeof obj !== 'object') return null;
+
+            if ('name' in obj && ('isPC' in obj || 'defenses' in obj || 'history' in obj || 'maxHp' in obj)) {
+                return normalizeBoardData({
+                    ...obj,
+                    isPC: !!obj.isPC,
+                    isDeleted: !!obj.isDeleted,
+                });
+            }
+
+            if ('basic' in obj || 'statuses' in obj || 'identInfo' in obj || 'komaInfo' in obj) {
+                const hpStat = (obj.statuses || []).find(s => s.bind === 'hp' || s.label === 'HP');
+                const pdefStat = (obj.statuses || []).find(s => s.bind === 'pdef' || s.label === '物理');
+                const mdefStat = (obj.statuses || []).find(s => s.bind === 'mdef' || s.label === '魔法');
+
+                return normalizeBoardData({
+                    name: obj.name || obj.basic?.name || obj.komaInfo?.data?.name || obj.id || '',
+                    category: obj.basic?.group || obj.kind || obj.basic?.type || '',
+                    element: obj.basic?.element ?? obj.basic?.elem ?? '',
+                    maxHp: typeof obj.basic?.hp === 'number' ? obj.basic.hp : Number(hpStat?.max ?? hpStat?.cur ?? 0),
+                    defenses: {
+                        物理: Number(obj.basic?.pdef ?? pdefStat?.cur ?? 0) || 0,
+                        魔法: Number(obj.basic?.mdef ?? mdefStat?.cur ?? 0) || 0,
+                        貫通: 0,
+                        ロス: 0,
+                    },
+                    initDefenses: {
+                        物理: Number(obj.basic?.pdef ?? pdefStat?.cur ?? 0) || 0,
+                        魔法: Number(obj.basic?.mdef ?? mdefStat?.cur ?? 0) || 0,
+                        貫通: 0,
+                        ロス: 0,
+                    },
+                    ident: typeof obj.identInfo === 'string' ? obj.identInfo : (obj.identInfo ? JSON.stringify(obj.identInfo) : ''),
+                    koma: obj.komaInfo ? JSON.stringify(obj.komaInfo) : '',
+                    identify: parseInt(obj.identify ?? obj.basic?.identify, 10) || 0,
+                    init: Number(obj.init ?? obj.basic?.init) || 0,
+                    isPC: !!obj.isPC,
+                    isDeleted: !!obj.isDeleted,
+                });
+            }
+
+            return null;
+        }
+
+        function exportToClipboard() {
+            const json = JSON.stringify(collectAllBoards(), null, 2);
+            navigator.clipboard.writeText(json)
+                .then(() => alert('クリップボードに出力しました'))
+                .catch(err => alert(`クリップボードへの出力に失敗しました\n${err.message}`));
+        }
+
+        async function importFromClipboard(mode = 'append') {
+            try {
+                const text = await navigator.clipboard.readText();
+                const raw = JSON.parse(text);
+                const boards = normalizeBoardsFromAny(raw);
+                if (!Array.isArray(boards)) throw new Error('読み込めるデータではありません');
+                loadBoards(boards, mode);
+            } catch (e) {
+                alert(`読み込みに失敗しました\n${e.message}`);
+            }
+        }
+
+        function loadBoards(boards, mode = 'append') {
+            if (mode === 'replace') {
+                document.querySelectorAll('.board').forEach(board => board.remove());
+            }
+            boards.forEach(data => createBoard(data, { isPC: !!data.isPC }));
+            applyBoardFilters();
+        }
+
+        function saveBoardsPrompt() {
+            const data = collectAllBoards();
+            if (!data.length) {
+                alert('保存するボードがありません');
+                return;
+            }
+            const defaultName = data[0]?.name ? `${data[0].name} 他${Math.max(0, data.length - 1)}` : 'ボード保存';
+            const name = (window.prompt('保存名を入力してください', defaultName) || '').trim();
+            if (!name) return;
+            const saves = getSaves();
+            if (saves[name] && !confirm(`「${name}」を上書きしますか？`)) return;
+            saves[name] = {
+                meta: {
+                    updatedAt: new Date().toISOString(),
+                    count: data.length,
+                },
+                data,
+            };
+            setSaves(saves);
+            alert(`保存しました: ${name}`);
+        }
+
+        function getSaves() {
+            try {
+                return JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+            } catch {
+                return {};
+            }
+        }
+
+        function setSaves(obj) {
+            localStorage.setItem(LS_KEY, JSON.stringify(obj));
+        }
+        function openLoadDialog(mode = 'append') {
+            pendingLoadMode = mode;
+            const saves = getSaves();
+            const list = document.getElementById('load-list');
+            list.innerHTML = '';
+
+            const names = Object.keys(saves).sort((a, b) => a.localeCompare(b, 'ja'));
+            if (!names.length) {
+                const li = document.createElement('li');
+                li.textContent = '(保存データがありません)';
+                list.appendChild(li);
+            } else {
+                names.forEach(name => {
+                    const entry = saves[name];
+                    const li = document.createElement('li');
+                    li.dataset.key = name;
+                    li.innerHTML = `
+                        <div>
+                            <div>${escapeHtml(name)}</div>
+                            <div class="save-meta">${escapeHtml(formatSaveMeta(entry))}</div>
+                        </div>
+                        <div>
+                            <button type="button" class="load-one-btn">読み込み</button>
+                            <button type="button" class="delete-save-btn">削除</button>
+                        </div>
+                    `;
+                    li.addEventListener('click', () => selectSaveItem(li));
+                    li.querySelector('.load-one-btn').addEventListener('click', e => {
+                        e.stopPropagation();
+                        selectSaveItem(li);
+                        confirmLoadSelected();
+                    });
+                    li.querySelector('.delete-save-btn').addEventListener('click', e => {
+                        e.stopPropagation();
+                        deleteOneSave(name);
+                    });
+                    list.appendChild(li);
+                });
+                selectSaveItem(list.querySelector('li[data-key]'));
+            }
+
+            document.getElementById('load-modal').classList.remove('hidden');
+        }
+
+        function closeLoadDialog() {
+            document.getElementById('load-modal').classList.add('hidden');
+        }
+
+        function selectSaveItem(li) {
+            if (!li) return;
+            document.querySelectorAll('#load-list li').forEach(item => item.classList.remove('selected'));
+            li.classList.add('selected');
+        }
+
+        function confirmLoadSelected() {
+            const selected = document.querySelector('#load-list li.selected');
+            const key = selected?.dataset.key;
+            if (!key) return;
+            const entry = getSaves()[key];
+            const data = Array.isArray(entry) ? entry : entry?.data;
+            if (!Array.isArray(data)) {
+                alert('保存データの形式が不正です');
+                return;
+            }
+            loadBoards(data.map(normalizeBoardData), pendingLoadMode);
+            closeLoadDialog();
+        }
+
+        function deleteOneSave(key) {
+            if (!confirm(`「${key}」を削除しますか？`)) return;
+            const saves = getSaves();
+            delete saves[key];
+            setSaves(saves);
+            openLoadDialog(pendingLoadMode);
+        }
+
+        function toggleShowPc() {
+            filterState.showPC = !filterState.showPC;
+            applyBoardFilters();
+        }
+
+        function toggleShowEnemy() {
+            filterState.showEnemy = !filterState.showEnemy;
+            applyBoardFilters();
+        }
+
+        function toggleShowDeleted() {
+            filterState.showDeleted = !filterState.showDeleted;
+            applyBoardFilters();
+        }
+
+        function applyBoardFilters() {
+            document.querySelectorAll('.board').forEach(board => {
+                const isPC = board.dataset.isPc === 'true';
+                const isDeleted = board.dataset.isDeleted === 'true';
+                const showType = isPC ? filterState.showPC : filterState.showEnemy;
+                const showDeletedState = filterState.showDeleted ? isDeleted : !isDeleted;
+                board.classList.toggle('board-hidden', !(showType && showDeletedState));
+            });
+
+            document.getElementById('btn-toggle-pc').classList.toggle('inactive', !filterState.showPC);
+            document.getElementById('btn-toggle-enemy').classList.toggle('inactive', !filterState.showEnemy);
+            document.getElementById('btn-toggle-deleted').classList.toggle('inactive', !filterState.showDeleted);
+        }
+
+        function sortVisibleBoardsByInit() {
+            const container = document.getElementById('boards');
+            const allBoards = Array.from(container.querySelectorAll('.board'));
+            const visibleBoards = allBoards.filter(board => !board.classList.contains('board-hidden'));
+            const hiddenBoards = allBoards.filter(board => board.classList.contains('board-hidden'));
+
+            visibleBoards.sort((a, b) => {
+                const initA = parseFloat(a.querySelector('.init-input')?.value) || 0;
+                const initB = parseFloat(b.querySelector('.init-input')?.value) || 0;
+                if (initB !== initA) return initB - initA;
+
+                const isPcA = a.dataset.isPc === 'true';
+                const isPcB = b.dataset.isPc === 'true';
+                if (isPcA !== isPcB) return isPcA ? -1 : 1;
+                return 0;
+            });
+
+            [...visibleBoards, ...hiddenBoards].forEach(board => container.appendChild(board));
+        }
+
+        function openManageModal() {
+            document.getElementById('manage-modal').classList.remove('hidden');
+        }
+
+        function closeManageModal() {
+            document.getElementById('manage-modal').classList.add('hidden');
+        }
+
+        function getCheckedValue(name) {
+            return document.querySelector(`input[name="${name}"]:checked`)?.value;
+        }
+
+        function boardMatchesScope(board, scope) {
+            const isPC = board.dataset.isPc === 'true';
+            if (scope === 'all') return true;
+            if (scope === 'pc') return isPC;
+            if (scope === 'enemy') return !isPC;
+            return false;
+        }
+
+        function runDeleteAction(action) {
+            const scope = getCheckedValue('delete-scope');
+            const targets = Array.from(document.querySelectorAll('.board')).filter(board => boardMatchesScope(board, scope));
+
+            if (action === 'purge') {
+                targets.forEach(board => board.remove());
+            } else if (action === 'purge_deleted') {
+                targets.filter(board => board.dataset.isDeleted === 'true').forEach(board => board.remove());
+            } else if (action === 'send_deleted') {
+                targets.filter(board => board.dataset.isDeleted !== 'true').forEach(board => {
+                    board.dataset.isDeleted = 'true';
+                    refreshBoardAppearance(board);
+                });
+            }
+
+            applyBoardFilters();
+        }
+
+        function saveFromManage() {
+            const mode = getCheckedValue('save-mode');
+            if (mode === 'local') {
+                saveBoardsPrompt();
+                return;
+            }
+
+            const json = JSON.stringify(collectAllBoards(), null, 2);
+            if (mode === 'clipboard') {
+                navigator.clipboard.writeText(json)
+                    .then(() => alert('クリップボードに保存しました'))
+                    .catch(err => alert(`保存に失敗しました\n${err.message}`));
+                return;
+            }
+
+            if (mode === 'file') {
+                downloadJsonFile(json);
+            }
+        }
+        function loadFromManage(mode) {
+            const source = getCheckedValue('load-mode');
+            if (source === 'local') {
+                openLoadDialog(mode);
+                return;
+            }
+            if (source === 'clipboard') {
+                importFromClipboard(mode);
+                return;
+            }
+            if (source === 'file') {
+                openJsonFileDialog(mode);
+            }
+        }
+
+        function downloadJsonFile(json) {
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `enemy-board-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function openJsonFileDialog(mode) {
+            const input = document.getElementById('json-file-input');
+            input.dataset.loadMode = mode;
+            input.value = '';
+            input.click();
+        }
+
+        async function handleJsonFileSelected(file, mode) {
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const raw = JSON.parse(text);
+                const boards = normalizeBoardsFromAny(raw);
+                if (!Array.isArray(boards)) throw new Error('読み込めるデータではありません');
+                loadBoards(boards, mode);
+            } catch (e) {
+                alert(`JSON読込に失敗しました\n${e.message}`);
+            }
+        }
+
+        function formatSaveMeta(entry) {
+            const meta = entry?.meta || {};
+            const count = meta.count ?? (Array.isArray(entry) ? entry.length : (entry?.data?.length || 0));
+            const when = meta.updatedAt ? new Date(meta.updatedAt).toLocaleString() : '';
+            return when ? `${when} / ${count}件` : `${count}件`;
+        }
+
+        function escapeAttr(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        document.getElementById('json-file-input').addEventListener('change', e => {
+            const file = e.target.files?.[0];
+            const mode = e.target.dataset.loadMode || 'append';
+            handleJsonFileSelected(file, mode);
+        });
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                closeLoadDialog();
+                closeManageModal();
+            }
+            if (e.key === 'Enter' && !document.getElementById('load-modal').classList.contains('hidden')) {
+                confirmLoadSelected();
+            }
+        });
+
+        new Sortable(document.getElementById('boards'), {
+            animation: 150,
+            handle: '.drag-handle',
+        });
+
+        applyBoardFilters();
+    </script>
+</body>
+
+</html>
