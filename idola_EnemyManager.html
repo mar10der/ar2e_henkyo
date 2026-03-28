@@ -813,7 +813,7 @@
 
         <div class="group">
           <h3>保存／出力</h3>
-          <button type="button" id="btnSaveOver" hidden aria-hidden="true" tabindex="-1"></button>
+          <button type="button" id="btnSaveOver" class="btn">上書き保存</button>
           <button type="button" id="btnSaveAs" hidden aria-hidden="true" tabindex="-1"></button>
           <div class="row">
             <div class="full" style="display:flex; gap:8px; flex-wrap:wrap">
@@ -1341,7 +1341,37 @@
     function duplicateEnemy(id) { const src = DB.enemies.find(e => e.id === id); if (!src) return; const copy = JSON.parse(JSON.stringify(src)); copy.id = uid(); copy.name = src.name + '（複製）'; copy.createdAt = nowISO(); copy.updatedAt = nowISO(); DB.enemies.push(copy); saveDB(DB); renderList(); openToForm(copy); }
     function deleteSelected() { const picked = pickedIds(); if (picked.length === 0 && currentId) picked.push(currentId); if (picked.length === 0) return alert('削除対象が選ばれていません。'); if (!confirm(`${picked.length}件削除します。よろしいですか？`)) return; DB.enemies = DB.enemies.filter(e => !picked.includes(e.id)); if (picked.includes(currentId)) emptyToForm(); saveDB(DB); renderList(); }
     function pickedIds() { return $$('#list .card input.pick:checked').map(i => i.dataset.id); }
-    function saveCurrent() { const e = getCurrent(); if (!e) return; touchUpdate(true); }
+    function saveCurrent() {
+      const e = getCurrent();
+      if (!e) return;
+      e.name = $('#name').value.trim() || '無名のエネミー';
+      e.tags = $('#tags').value.split(',').map(s => s.trim()).filter(Boolean);
+      const kindSel = $$('input[name="kind"]:checked')[0];
+      e.kind = kindSel ? kindSel.value : 'solo';
+      e.basic.group = $('#group').value;
+      e.basic.element = $('#element').value;
+      e.basic.el = num($('#el').value);
+      e.basic.identify = num($('#identify').value);
+      e.basic.pdef = num($('#pdef').value);
+      e.basic.mdef = num($('#mdef').value);
+      e.basic.hp = num($('#hp').value);
+      e.basic.mp = num($('#mp').value);
+      e.basic.init = num($('#init').value);
+      e.basic.moveM = num($('#moveM').value);
+      ['str', 'dex', 'agi', 'int', 'sen', 'mnd', 'luk'].forEach(k => {
+        e.basic.ablBase[k] = num($(`#base_${k}`).value);
+        e.basic.abl[k] = num($(`#abl_${k}`).value);
+      });
+      e.memo = $('#memo').value;
+      e.chatPalette = $('#chatPalette').value;
+      syncStatusFromBasic(e);
+      e.identInfo = buildIdentInfo(e);
+      e.komaInfo = buildKomaInfo(e);
+      e.updatedAt = nowISO();
+      saveDB(DB);
+      renderList();
+      openToForm(e);
+    }
     // export helpers
     function buildExportRow(e) { return { id: e.id, name: e.name, maxHP: e.basic.hp, currentHP: e.basic.hp, init: e.basic.init, tags: (e.tags || []).join(' '), note: (e.reactions || []).join(' / ') }; }
     function toCSV(rows) { if (rows.length === 0) return ''; const headers = Object.keys(rows[0]); const esc = v => { if (v == null) return ''; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s }; return [headers.join(','), ...rows.map(r => headers.map(h => esc(r[h])).join(','))].join('\n'); }
