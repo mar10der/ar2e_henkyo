@@ -122,7 +122,7 @@
 
     .input-with-button {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       gap: 10px;
       align-items: start;
     }
@@ -326,10 +326,12 @@
           <label for="gmName">GM名</label>
           <div class="input-with-button">
             <input id="gmName" type="text" autocomplete="name">
+            <button class="secondary gm-only" type="button" id="saveGmName">保存</button>
             <button class="secondary copy-session-field" type="button" data-copy-target="gmName">コピー</button>
           </div>
         </div>
       </div>
+      <p class="status" id="sessionStatus" aria-live="polite"></p>
     </section>
 
     <section aria-labelledby="output-heading">
@@ -356,22 +358,34 @@
         <button class="secondary" type="button" id="copyRichOutput">コピー</button>
       </div>
     </section>
+
+    <section class="gm-only" aria-labelledby="log-output-heading">
+      <h2 id="log-output-heading">ログ集積所</h2>
+      <div class="output" id="logOutput"></div>
+      <div class="actions">
+        <button class="secondary" type="button" id="copyLogOutput">コピー</button>
+      </div>
+    </section>
   </main>
 
   <script>
     const urlList = document.querySelector("#urlList");
     const status = document.querySelector("#status");
+    const sessionStatus = document.querySelector("#sessionStatus");
     const output = document.querySelector("#output");
     const guildOutput = document.querySelector("#guildOutput");
     const richOutput = document.querySelector("#richOutput");
+    const logOutput = document.querySelector("#logOutput");
     const addUrlButton = document.querySelector("#addUrl");
     const loadSheetsButton = document.querySelector("#loadSheets");
     const loadSheetsInlineButton = document.querySelector("#loadSheetsInline");
     const copyOutputButton = document.querySelector("#copyOutput");
     const copyGuildOutputButton = document.querySelector("#copyGuildOutput");
     const copyRichOutputButton = document.querySelector("#copyRichOutput");
+    const copyLogOutputButton = document.querySelector("#copyLogOutput");
     const gmModeButton = document.querySelector("#gmModeButton");
     const plModeButton = document.querySelector("#plModeButton");
+    const saveGmNameButton = document.querySelector("#saveGmName");
     const copySessionFieldButtons = document.querySelectorAll(".copy-session-field");
     const scenarioTitleInput = document.querySelector("#scenarioTitle");
     const sessionDateInput = document.querySelector("#sessionDate");
@@ -382,6 +396,11 @@
     let sessionInfo = {};
     let currentMode = "gm";
     let loadedSheets = [];
+    const modeGmNames = {
+      gm: "",
+      pl: "",
+    };
+    const savedGmNameKey = "trpgSessionTool.gmName";
 
     function getJapanDateString() {
       return new Intl.DateTimeFormat("ja-JP", {
@@ -390,6 +409,38 @@
         month: "2-digit",
         day: "2-digit",
       }).format(new Date());
+    }
+
+    function loadSavedGmName() {
+      try {
+        return localStorage.getItem(savedGmNameKey) || "";
+      } catch (error) {
+        return "";
+      }
+    }
+
+    function saveGmName() {
+      const gmName = gmNameInput.value.trim();
+      if (!gmName) {
+        sessionStatus.className = "status error";
+        sessionStatus.textContent = "保存するGM名を入力してください。";
+        return;
+      }
+
+      const savedGmName = loadSavedGmName();
+      if (savedGmName && savedGmName !== gmName && !confirm("保存するGM名を上書きしますか？")) {
+        return;
+      }
+
+      try {
+        localStorage.setItem(savedGmNameKey, gmName);
+        modeGmNames.gm = gmName;
+        sessionStatus.className = "status";
+        sessionStatus.textContent = "GM名を保存しました。";
+      } catch (error) {
+        sessionStatus.className = "status error";
+        sessionStatus.textContent = "GM名を保存できませんでした。";
+      }
     }
 
     function saveSessionInfo() {
@@ -403,6 +454,7 @@
       };
       updateGuildOutput();
       updateRichOutput();
+      updateLogOutput();
       return sessionInfo;
     }
 
@@ -463,8 +515,31 @@ ${participants}
       richOutput.textContent = buildRichOutput(output.textContent);
     }
 
+    function buildLogOutput() {
+      const players = loadedSheets
+        .map((sheet) => `${sheet.plName}さん`)
+        .join("、");
+      return `${sessionInfo.date}
+${sessionInfo.scenarioTitle}
+GM：${sessionInfo.gmName}
+PL：${players}
+一言：`;
+    }
+
+    function updateLogOutput() {
+      if (!logOutput) {
+        return;
+      }
+
+      logOutput.textContent = buildLogOutput();
+    }
+
     function setMode(mode) {
+      if (currentMode !== mode) {
+        modeGmNames[currentMode] = gmNameInput.value;
+      }
       currentMode = mode;
+      gmNameInput.value = modeGmNames[mode];
       document.body.classList.toggle("mode-gm", mode === "gm");
       document.body.classList.toggle("mode-pl", mode === "pl");
       gmModeButton.classList.toggle("active", mode === "gm");
@@ -501,10 +576,11 @@ ${participants}
       resultLine.className = "sheet-result-line";
 
       const guildToggle = document.createElement("button");
-      guildToggle.className = "guild-toggle pl-only active";
+      guildToggle.className = "guild-toggle pl-only";
       guildToggle.type = "button";
       guildToggle.textContent = "ギルド";
-      guildToggle.setAttribute("aria-pressed", "true");
+      guildToggle.disabled = true;
+      guildToggle.setAttribute("aria-pressed", "false");
       guildToggle.addEventListener("click", () => {
         const enabled = !row.sheet?.guildEnabled;
         if (!row.sheet) {
@@ -576,7 +652,7 @@ ${participants}
         plName: data.playerName || "PL名未設定",
         guildName: normalizeGuildName(data.guildName),
         level: data.level || "CL未設定",
-        guildEnabled: true,
+        guildEnabled: false,
       };
     }
 
@@ -597,14 +673,16 @@ ${participants}
       loadedSheets = [];
       updateGuildOutput();
       updateRichOutput();
+      updateLogOutput();
       rows.forEach((row) => {
         const result = row.querySelector(".sheet-result");
         const guildToggle = row.querySelector(".guild-toggle");
         row.sheet = null;
         result.className = "sheet-result";
         result.textContent = row.querySelector("input").value.trim() ? "読み込み待ち" : "未入力";
-        guildToggle.classList.add("active");
-        guildToggle.setAttribute("aria-pressed", "true");
+        guildToggle.disabled = true;
+        guildToggle.classList.remove("active");
+        guildToggle.setAttribute("aria-pressed", "false");
       });
 
       if (!entries.length) {
@@ -629,6 +707,10 @@ ${participants}
             const sheet = result.value;
             sheets.push(sheet);
             entry.row.sheet = sheet;
+            const guildToggle = entry.row.querySelector(".guild-toggle");
+            guildToggle.disabled = false;
+            guildToggle.classList.remove("active");
+            guildToggle.setAttribute("aria-pressed", "false");
             entry.result.className = "sheet-result loaded";
             entry.result.textContent = `PC名: ${sheet.pcName} ／ PL名: ${sheet.plName} ／ CL: ${sheet.level} ／ 所属ギルド: ${sheet.guildName}`;
           } else {
@@ -641,6 +723,7 @@ ${participants}
         output.textContent = buildParticipantOutput(sheets);
         updateGuildOutput();
         updateRichOutput();
+        updateLogOutput();
         const failedCount = results.length - sheets.length;
         status.textContent = failedCount
           ? `${sheets.length}件読み込み、${failedCount}件失敗しました。`
@@ -688,6 +771,8 @@ ${participants}
     copyOutputButton.addEventListener("click", () => copyTextFromElement(output, "出力をコピーしました。"));
     copyGuildOutputButton.addEventListener("click", () => copyTextFromElement(guildOutput, "ギルド出力をコピーしました。"));
     copyRichOutputButton.addEventListener("click", () => copyTextFromElement(richOutput, "リッチな出力をコピーしました。"));
+    copyLogOutputButton.addEventListener("click", () => copyTextFromElement(logOutput, "ログ集積所をコピーしました。"));
+    saveGmNameButton.addEventListener("click", saveGmName);
     copySessionFieldButtons.forEach((button) => {
       button.addEventListener("click", () => {
         const target = document.querySelector(`#${button.dataset.copyTarget}`);
@@ -701,6 +786,8 @@ ${participants}
       .forEach((input) => input.addEventListener("input", saveSessionInfo));
 
     sessionDateInput.value = getJapanDateString();
+    modeGmNames.gm = loadSavedGmName();
+    modeGmNames.pl = "";
     setMode("gm");
 
     for (let index = 0; index < 4; index += 1) {
