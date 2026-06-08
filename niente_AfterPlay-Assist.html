@@ -154,6 +154,12 @@
       font: inherit;
       font-weight: 700;
       cursor: pointer;
+      transition:
+        background-color 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease,
+        box-shadow 120ms ease,
+        transform 80ms ease;
     }
 
     button.primary {
@@ -163,6 +169,7 @@
 
     button.primary:hover {
       background: var(--accent-dark);
+      box-shadow: 0 3px 10px rgba(47, 111, 237, 0.22);
     }
 
     button.secondary {
@@ -171,10 +178,35 @@
       border-color: var(--line);
     }
 
+    button.secondary:hover {
+      border-color: #aab4c3;
+      background: #f9fafc;
+      box-shadow: 0 2px 8px rgba(34, 40, 49, 0.08);
+    }
+
     button.danger {
       color: var(--danger);
       background: var(--danger-bg);
       border-color: #ffd7d2;
+    }
+
+    button.danger:hover {
+      color: #912018;
+      background: #ffe9e5;
+      border-color: #ffb8ae;
+      box-shadow: 0 2px 8px rgba(180, 35, 24, 0.12);
+    }
+
+    button:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
+      box-shadow: none;
+      transform: none;
     }
 
     .output {
@@ -238,7 +270,20 @@
       border-color: var(--accent);
     }
 
-    body.mode-pl .gm-only {
+    .guild-toggle:not(:disabled):hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: #f0f7ff;
+    }
+
+    .guild-toggle.active:not(:disabled):hover {
+      color: #fff;
+      background: var(--accent-dark);
+      border-color: var(--accent-dark);
+    }
+
+    body.mode-pl .gm-only,
+    body.mode-integrated .gm-save-only {
       display: none;
     }
 
@@ -276,6 +321,7 @@
     <div class="mode-switch" aria-label="使用モード">
       <button class="mode-button active" type="button" id="gmModeButton" aria-pressed="true">GM用</button>
       <button class="mode-button" type="button" id="plModeButton" aria-pressed="false">PL用</button>
+      <button class="mode-button" type="button" id="integratedModeButton" aria-pressed="false">統合</button>
     </div>
 
 
@@ -326,7 +372,7 @@
           <label for="gmName">GM名</label>
           <div class="input-with-button">
             <input id="gmName" type="text" autocomplete="name">
-            <button class="secondary gm-only" type="button" id="saveGmName">保存</button>
+            <button class="secondary gm-only gm-save-only" type="button" id="saveGmName">保存</button>
             <button class="secondary copy-session-field" type="button" data-copy-target="gmName">コピー</button>
           </div>
         </div>
@@ -385,6 +431,7 @@
     const copyLogOutputButton = document.querySelector("#copyLogOutput");
     const gmModeButton = document.querySelector("#gmModeButton");
     const plModeButton = document.querySelector("#plModeButton");
+    const integratedModeButton = document.querySelector("#integratedModeButton");
     const saveGmNameButton = document.querySelector("#saveGmName");
     const copySessionFieldButtons = document.querySelectorAll(".copy-session-field");
     const scenarioTitleInput = document.querySelector("#scenarioTitle");
@@ -399,6 +446,7 @@
     const modeGmNames = {
       gm: "",
       pl: "",
+      integrated: "",
     };
     const savedGmNameKey = "trpgSessionTool.gmName";
 
@@ -542,10 +590,13 @@ PL：${players}
       gmNameInput.value = modeGmNames[mode];
       document.body.classList.toggle("mode-gm", mode === "gm");
       document.body.classList.toggle("mode-pl", mode === "pl");
+      document.body.classList.toggle("mode-integrated", mode === "integrated");
       gmModeButton.classList.toggle("active", mode === "gm");
       plModeButton.classList.toggle("active", mode === "pl");
+      integratedModeButton.classList.toggle("active", mode === "integrated");
       gmModeButton.setAttribute("aria-pressed", String(mode === "gm"));
       plModeButton.setAttribute("aria-pressed", String(mode === "pl"));
+      integratedModeButton.setAttribute("aria-pressed", String(mode === "integrated"));
       saveSessionInfo();
     }
 
@@ -782,12 +833,14 @@ PL：${players}
     });
     gmModeButton.addEventListener("click", () => setMode("gm"));
     plModeButton.addEventListener("click", () => setMode("pl"));
+    integratedModeButton.addEventListener("click", () => setMode("integrated"));
     [scenarioTitleInput, sessionDateInput, gmNameInput, growthPointInput, goldInput]
       .forEach((input) => input.addEventListener("input", saveSessionInfo));
 
     sessionDateInput.value = getJapanDateString();
     modeGmNames.gm = loadSavedGmName();
     modeGmNames.pl = "";
+    modeGmNames.integrated = "";
     setMode("gm");
 
     for (let index = 0; index < 4; index += 1) {
