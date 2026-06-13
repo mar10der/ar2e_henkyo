@@ -370,7 +370,7 @@
     }
 
     function buildSkillCommands(data) {
-      const skillNum = numericValue(data, "skillsNum", -1);
+      const skillNum = numericValue(data, "skillNum", numericValue(data, "skillsNum", -1));
       if (skillNum < 0) {
         return "";
       }
