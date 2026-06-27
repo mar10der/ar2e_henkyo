@@ -1,0 +1,1489 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ゆとシートAR2E用 アイテム管理ツール</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --surface-2: #f0f4f8;
+      --line: #d9dee7;
+      --line-strong: #b8c1cf;
+      --text: #202938;
+      --muted: #697386;
+      --accent: #1967d2;
+      --accent-soft: #e8f0fe;
+      --danger: #b3261e;
+      --danger-soft: #fcebea;
+      --ok: #146c43;
+      --shadow: 0 1px 2px rgba(16, 24, 40, .08);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      padding: 6px 10px;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .55;
+      background: var(--surface-2);
+      border-color: var(--line);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      padding: 7px 9px;
+    }
+
+    textarea {
+      min-height: 220px;
+      resize: vertical;
+      white-space: pre;
+      overflow-wrap: normal;
+      font-family: "Consolas", "Yu Gothic UI", monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    label {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      line-height: 1.25;
+    }
+
+    h1 {
+      font-size: clamp(20px, 3vw, 28px);
+    }
+
+    h2 {
+      font-size: 16px;
+    }
+
+    h3 {
+      font-size: 14px;
+    }
+
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .header-copy {
+      display: grid;
+      gap: 4px;
+    }
+
+    .header-copy p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .status {
+      min-width: min(320px, 40vw);
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .status.ok {
+      color: var(--ok);
+      background: #ecfdf3;
+      border-color: #badbcc;
+    }
+
+    .status.warn {
+      color: var(--danger);
+      background: var(--danger-soft);
+      border-color: #f0b8b2;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+      gap: 16px;
+      padding: 16px;
+      align-items: start;
+    }
+
+    .pane {
+      display: grid;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .section {
+      display: grid;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .section-header p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .button-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .button-primary:hover {
+      background: #1558b0;
+      border-color: #1558b0;
+    }
+
+    .button-danger {
+      color: var(--danger);
+      border-color: #d7aaa6;
+    }
+
+    .button-danger:hover {
+      background: var(--danger-soft);
+      border-color: var(--danger);
+    }
+
+    .button-plain {
+      background: transparent;
+      border-color: transparent;
+      color: var(--accent);
+      padding-inline: 4px;
+    }
+
+    .button-plain:hover {
+      border-color: var(--line);
+      background: var(--accent-soft);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+
+    .form-grid .wide {
+      grid-column: span 2;
+    }
+
+    .form-grid .full {
+      grid-column: 1 / -1;
+    }
+
+    .check-row {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .check-row input {
+      width: auto;
+    }
+
+    .db-tools {
+      display: grid;
+      gap: 10px;
+    }
+
+    .db-search {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(110px, 150px);
+      gap: 8px;
+    }
+
+    .file-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      padding: 6px 10px;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    .file-button:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .file-button input {
+      display: none;
+    }
+
+    .db-list {
+      display: grid;
+      gap: 8px;
+      max-height: calc(100vh - 410px);
+      min-height: 180px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .db-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: stretch;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .db-main {
+      display: grid;
+      gap: 3px;
+      width: 100%;
+      min-height: 52px;
+      border: 0;
+      border-radius: var(--radius) 0 0 var(--radius);
+      background: transparent;
+      text-align: left;
+      padding: 8px 10px;
+      white-space: normal;
+    }
+
+    .db-main:hover {
+      background: var(--accent-soft);
+    }
+
+    .db-name {
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .db-meta {
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .db-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 4px;
+      padding: 6px;
+      border-left: 1px solid var(--line);
+      align-content: center;
+    }
+
+    .db-actions button {
+      min-height: 28px;
+      padding: 3px 8px;
+      font-size: 12px;
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 120px;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      color: var(--muted);
+      text-align: center;
+      padding: 16px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    table {
+      width: 100%;
+      min-width: 780px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    td input,
+    td select {
+      min-width: 0;
+      padding: 6px 8px;
+    }
+
+    .cell-name {
+      min-width: 190px;
+    }
+
+    .cell-type {
+      width: 140px;
+    }
+
+    .cell-small {
+      width: 94px;
+    }
+
+    .cell-actions {
+      width: 190px;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .row-actions button {
+      min-height: 30px;
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    .output-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .output-panel {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .small-note {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--muted);
+      padding: 2px 8px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 980px) {
+      .app-header {
+        position: static;
+        flex-direction: column;
+      }
+
+      .status {
+        width: 100%;
+        min-width: 0;
+        text-align: left;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .db-list {
+        max-height: 420px;
+      }
+
+      .output-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .layout {
+        padding: 10px;
+      }
+
+      .app-header {
+        padding: 14px;
+      }
+
+      .section {
+        padding: 12px;
+      }
+
+      .section-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+
+      .form-grid,
+      .db-search {
+        grid-template-columns: 1fr;
+      }
+
+      .form-grid .wide {
+        grid-column: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="app-header">
+    <div class="header-copy">
+      <h1>AR2Eアイテム管理ツール</h1>
+      <p>DBから追加、手入力、JSON入出力、ゆとシート向けコピーに対応した単体HTMLです。</p>
+    </div>
+    <div id="status" class="status" role="status">準備完了</div>
+  </header>
+
+  <div class="layout">
+    <aside class="pane">
+      <section class="section" aria-labelledby="db-title">
+        <div class="section-header">
+          <div>
+            <h2 id="db-title">アイテムDB</h2>
+            <p>登録済みアイテムをクリックすると管理欄に追加します。</p>
+          </div>
+          <span id="db-count" class="pill">0件</span>
+        </div>
+
+        <div class="db-tools">
+          <div class="db-search">
+            <label>
+              検索
+              <input id="db-search" type="search" autocomplete="off" placeholder="名称・種別・価格・重量">
+            </label>
+            <label>
+              種別
+              <select id="db-filter"></select>
+            </label>
+          </div>
+          <div class="actions">
+            <label class="file-button">
+              JSON読込
+              <input id="json-import" type="file" accept="application/json,.json">
+            </label>
+            <button id="export-db" type="button">DB JSON出力</button>
+            <button id="clear-db" type="button" class="button-danger">DB削除</button>
+          </div>
+        </div>
+
+        <form id="db-form" class="form-grid" autocomplete="off">
+          <input id="db-edit-id" type="hidden">
+          <label class="wide">
+            名称
+            <input id="db-name" type="text" required placeholder="例: 冒険者セット">
+          </label>
+          <label>
+            種別
+            <select id="db-type" required></select>
+          </label>
+          <label>
+            価格
+            <input id="db-price" type="text" inputmode="decimal" required value="0">
+          </label>
+          <label>
+            重量
+            <input id="db-weight" type="text" inputmode="decimal" required value="0">
+          </label>
+          <div class="actions full">
+            <button id="db-reset" type="button">入力クリア</button>
+            <button type="submit" class="button-primary">DBに保存</button>
+          </div>
+        </form>
+
+        <div id="db-list" class="db-list" aria-live="polite"></div>
+      </section>
+    </aside>
+
+    <main class="pane">
+      <section class="section" aria-labelledby="manual-title">
+        <div class="section-header">
+          <div>
+            <h2 id="manual-title">手入力で追加</h2>
+            <p>DBにないアイテムも管理欄へ追加できます。</p>
+          </div>
+        </div>
+        <form id="manual-form" class="form-grid" autocomplete="off">
+          <label class="wide">
+            名称
+            <input id="manual-name" type="text" required placeholder="例: 謎の鍵">
+          </label>
+          <label>
+            種別
+            <select id="manual-type" required></select>
+          </label>
+          <label>
+            個数
+            <input id="manual-qty" type="number" min="1" step="1" value="1" required>
+          </label>
+          <label>
+            価格
+            <input id="manual-price" type="text" inputmode="decimal" required value="0">
+          </label>
+          <label>
+            重量
+            <input id="manual-weight" type="text" inputmode="decimal" required value="0">
+          </label>
+          <label class="check-row">
+            <input id="manual-save-db" type="checkbox">
+            同時にDB登録
+          </label>
+          <div class="actions full">
+            <button id="manual-reset" type="button">入力クリア</button>
+            <button type="submit" class="button-primary">管理欄に追加</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="section" aria-labelledby="list-title">
+        <div class="section-header">
+          <div>
+            <h2 id="list-title">アイテム管理</h2>
+            <p>個数や価格、重量を変えると下のコピー欄へ即時反映します。</p>
+          </div>
+          <div class="actions">
+            <span id="list-count" class="pill">0行</span>
+            <span id="list-total" class="pill">合計 0</span>
+            <button id="clear-list" type="button" class="button-danger">管理欄を空にする</button>
+          </div>
+        </div>
+        <div id="managed-empty" class="empty">DBから追加するか、手入力でアイテムを追加してください。</div>
+        <div id="managed-wrap" class="table-wrap" hidden>
+          <table>
+            <thead>
+              <tr>
+                <th class="cell-name">名称</th>
+                <th class="cell-type">種別</th>
+                <th class="cell-small">価格</th>
+                <th class="cell-small">重量</th>
+                <th class="cell-small">個数</th>
+                <th class="cell-actions">操作</th>
+              </tr>
+            </thead>
+            <tbody id="managed-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="output-title">
+        <div class="section-header">
+          <div>
+            <h2 id="output-title">ゆとシート用コピー欄</h2>
+            <p>装備は携帯品欄から除外し、収支履歴では装備としてまとめます。</p>
+          </div>
+        </div>
+        <div class="output-grid">
+          <div class="output-panel">
+            <div class="output-header">
+              <h3>携帯品欄</h3>
+              <button id="copy-carry" type="button">コピー</button>
+            </div>
+            <textarea id="carry-output" readonly aria-label="携帯品欄"></textarea>
+            <div class="small-note">重量は計算せず、重量*個数の文字列として出力します。収納は重量を書きません。</div>
+          </div>
+          <div class="output-panel">
+            <div class="output-header">
+              <h3>収支履歴欄</h3>
+              <button id="copy-ledger" type="button">コピー</button>
+            </div>
+            <textarea id="ledger-output" readonly aria-label="収支履歴欄"></textarea>
+            <div class="small-note">価格は計算せず、価格*個数の文字列として出力します。</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const STORAGE_KEYS = {
+        db: "trpg-item-manager:database:v1",
+        list: "trpg-item-manager:managed-list:v1"
+      };
+
+      const EQUIPMENT_TYPES = ["武器", "盾", "防具", "装身具", "クリスタル"];
+      const PORTABLE_TYPES = ["道具", "ポーション", "食糧", "料理", "呪符", "装飾品", "矢弾", "収納"];
+      const TYPE_ORDER = [...EQUIPMENT_TYPES, ...PORTABLE_TYPES];
+      const DEFAULT_TYPE = "道具";
+
+      const elements = {
+        status: document.getElementById("status"),
+        dbCount: document.getElementById("db-count"),
+        dbSearch: document.getElementById("db-search"),
+        dbFilter: document.getElementById("db-filter"),
+        dbList: document.getElementById("db-list"),
+        dbForm: document.getElementById("db-form"),
+        dbEditId: document.getElementById("db-edit-id"),
+        dbName: document.getElementById("db-name"),
+        dbType: document.getElementById("db-type"),
+        dbPrice: document.getElementById("db-price"),
+        dbWeight: document.getElementById("db-weight"),
+        dbReset: document.getElementById("db-reset"),
+        jsonImport: document.getElementById("json-import"),
+        exportDb: document.getElementById("export-db"),
+        clearDb: document.getElementById("clear-db"),
+        manualForm: document.getElementById("manual-form"),
+        manualName: document.getElementById("manual-name"),
+        manualType: document.getElementById("manual-type"),
+        manualQty: document.getElementById("manual-qty"),
+        manualPrice: document.getElementById("manual-price"),
+        manualWeight: document.getElementById("manual-weight"),
+        manualSaveDb: document.getElementById("manual-save-db"),
+        manualReset: document.getElementById("manual-reset"),
+        listCount: document.getElementById("list-count"),
+        listTotal: document.getElementById("list-total"),
+        managedEmpty: document.getElementById("managed-empty"),
+        managedWrap: document.getElementById("managed-wrap"),
+        managedBody: document.getElementById("managed-body"),
+        clearList: document.getElementById("clear-list"),
+        carryOutput: document.getElementById("carry-output"),
+        ledgerOutput: document.getElementById("ledger-output"),
+        copyCarry: document.getElementById("copy-carry"),
+        copyLedger: document.getElementById("copy-ledger")
+      };
+
+      let database = [];
+      let managedItems = [];
+      let statusTimer = 0;
+
+      function initialize() {
+        populateTypeSelect(elements.dbFilter, true);
+        populateTypeSelect(elements.dbType);
+        populateTypeSelect(elements.manualType);
+        database = loadArray(STORAGE_KEYS.db).map(normalizeDbItem).filter(Boolean);
+        managedItems = loadArray(STORAGE_KEYS.list).map(normalizeManagedItem).filter(Boolean);
+        bindEvents();
+        renderAll();
+      }
+
+      function bindEvents() {
+        elements.dbSearch.addEventListener("input", renderDatabase);
+        elements.dbFilter.addEventListener("change", renderDatabase);
+        elements.dbForm.addEventListener("submit", handleDbFormSubmit);
+        elements.dbReset.addEventListener("click", resetDbForm);
+        elements.jsonImport.addEventListener("change", handleJsonImport);
+        elements.exportDb.addEventListener("click", exportDatabase);
+        elements.clearDb.addEventListener("click", clearDatabase);
+        elements.dbList.addEventListener("click", handleDatabaseClick);
+
+        elements.manualForm.addEventListener("submit", handleManualSubmit);
+        elements.manualReset.addEventListener("click", resetManualForm);
+        elements.clearList.addEventListener("click", clearManagedItems);
+        elements.managedBody.addEventListener("input", handleManagedInput);
+        elements.managedBody.addEventListener("change", handleManagedInput);
+        elements.managedBody.addEventListener("click", handleManagedClick);
+
+        elements.copyCarry.addEventListener("click", () => copyText(elements.carryOutput.value, "携帯品欄をコピーしました"));
+        elements.copyLedger.addEventListener("click", () => copyText(elements.ledgerOutput.value, "収支履歴欄をコピーしました"));
+      }
+
+      function populateTypeSelect(select, withAllOption = false) {
+        const currentValue = select.value;
+        select.innerHTML = "";
+        if (withAllOption) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "すべて";
+          select.appendChild(option);
+        }
+
+        const equipmentGroup = document.createElement("optgroup");
+        equipmentGroup.label = "装備";
+        EQUIPMENT_TYPES.forEach((type) => equipmentGroup.appendChild(makeOption(type)));
+        select.appendChild(equipmentGroup);
+
+        const portableGroup = document.createElement("optgroup");
+        portableGroup.label = "携帯品・収納";
+        PORTABLE_TYPES.forEach((type) => portableGroup.appendChild(makeOption(type)));
+        select.appendChild(portableGroup);
+
+        if (currentValue && TYPE_ORDER.includes(currentValue)) {
+          select.value = currentValue;
+        } else if (!withAllOption) {
+          select.value = DEFAULT_TYPE;
+        }
+      }
+
+      function makeOption(type) {
+        const option = document.createElement("option");
+        option.value = type;
+        option.textContent = type;
+        return option;
+      }
+
+      function loadArray(key) {
+        try {
+          const raw = localStorage.getItem(key);
+          const parsed = raw ? JSON.parse(raw) : [];
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+          setStatus("保存データの読み込みに失敗しました", "warn");
+          return [];
+        }
+      }
+
+      function saveState() {
+        localStorage.setItem(STORAGE_KEYS.db, JSON.stringify(database));
+        localStorage.setItem(STORAGE_KEYS.list, JSON.stringify(managedItems));
+      }
+
+      function renderAll() {
+        renderDatabase();
+        renderManagedItems();
+        renderOutputs();
+      }
+
+      function renderDatabase() {
+        const query = normalizeSearch(elements.dbSearch.value);
+        const filter = elements.dbFilter.value;
+        const items = database
+          .slice()
+          .sort(compareItems)
+          .filter((item) => {
+            if (filter && item.type !== filter) return false;
+            if (!query) return true;
+            return normalizeSearch(`${item.name} ${item.type} ${item.price} ${item.weight}`).includes(query);
+          });
+
+        elements.dbCount.textContent = `${database.length}件`;
+        elements.dbList.innerHTML = "";
+
+        if (items.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = database.length === 0 ? "DBは空です。フォーム登録またはJSON読込を使ってください。" : "条件に一致するアイテムがありません。";
+          elements.dbList.appendChild(empty);
+          return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        items.forEach((item) => {
+          const row = document.createElement("div");
+          row.className = "db-item";
+          row.innerHTML = `
+            <button type="button" class="db-main" data-action="add-db" data-id="${escapeAttr(item.id)}" title="管理欄に追加">
+              <span class="db-name">${escapeHtml(item.name)}</span>
+              <span class="db-meta">${escapeHtml(item.type)} / 価格 ${escapeHtml(item.price)} / 重量 ${escapeHtml(item.weight)}</span>
+            </button>
+            <div class="db-actions">
+              <button type="button" data-action="edit-db" data-id="${escapeAttr(item.id)}">編集</button>
+              <button type="button" class="button-danger" data-action="delete-db" data-id="${escapeAttr(item.id)}">削除</button>
+            </div>
+          `;
+          fragment.appendChild(row);
+        });
+        elements.dbList.appendChild(fragment);
+      }
+
+      function renderManagedItems() {
+        elements.listCount.textContent = `${managedItems.length}行`;
+        elements.listTotal.textContent = formatManagedTotal();
+        elements.managedEmpty.hidden = managedItems.length > 0;
+        elements.managedWrap.hidden = managedItems.length === 0;
+        elements.managedBody.innerHTML = "";
+
+        if (managedItems.length === 0) return;
+
+        const fragment = document.createDocumentFragment();
+        managedItems.forEach((item) => {
+          const tr = document.createElement("tr");
+          const isRegistered = Boolean(findExactDbMatch(item));
+          tr.dataset.id = item.id;
+          tr.innerHTML = `
+            <td class="cell-name">
+              <input data-field="name" type="text" value="${escapeAttr(item.name)}" aria-label="名称">
+            </td>
+            <td class="cell-type">
+              <select data-field="type" aria-label="種別">${typeOptionsHtml(item.type)}</select>
+            </td>
+            <td class="cell-small">
+              <input data-field="price" type="text" inputmode="decimal" value="${escapeAttr(item.price)}" aria-label="価格">
+            </td>
+            <td class="cell-small">
+              <input data-field="weight" type="text" inputmode="decimal" value="${escapeAttr(item.weight)}" aria-label="重量">
+            </td>
+            <td class="cell-small">
+              <input data-field="qty" type="number" min="1" step="1" value="${item.qty}" aria-label="個数">
+            </td>
+            <td class="cell-actions">
+              <div class="row-actions">
+                <button type="button" data-action="save-line-db" ${isRegistered ? "disabled" : ""}>${isRegistered ? "DB登録済" : "DB登録"}</button>
+                <button type="button" data-action="duplicate-line">複製</button>
+                <button type="button" class="button-danger" data-action="delete-line">削除</button>
+              </div>
+            </td>
+          `;
+          fragment.appendChild(tr);
+        });
+        elements.managedBody.appendChild(fragment);
+      }
+
+      function renderOutputs() {
+        elements.listTotal.textContent = formatManagedTotal();
+        elements.carryOutput.value = buildCarryOutput();
+        elements.ledgerOutput.value = buildLedgerOutput();
+      }
+
+      function handleDbFormSubmit(event) {
+        event.preventDefault();
+        const item = normalizeDbItem({
+          id: elements.dbEditId.value || undefined,
+          name: elements.dbName.value,
+          type: elements.dbType.value,
+          price: elements.dbPrice.value,
+          weight: elements.dbWeight.value
+        });
+
+        if (!item) {
+          setStatus("名称を入力してください", "warn");
+          return;
+        }
+
+        const editId = elements.dbEditId.value;
+        if (editId) {
+          const conflict = database.find((dbItem) => dbItem.id !== editId && makeDbKey(dbItem) === makeDbKey(item));
+          if (conflict) {
+            database = database.filter((dbItem) => dbItem.id !== editId);
+            database = database.map((dbItem) => dbItem.id === conflict.id ? { ...item, id: conflict.id } : dbItem);
+            setStatus("同じ名称と種別のDB項目に統合しました", "ok");
+          } else {
+            database = database.map((dbItem) => dbItem.id === editId ? item : dbItem);
+            setStatus("DBを更新しました", "ok");
+          }
+        } else {
+          const result = upsertDatabase(item);
+          setStatus(result === "updated" ? "同じ名称と種別のDB項目を更新しました" : "DBに登録しました", "ok");
+        }
+
+        resetDbForm();
+        saveState();
+        renderAll();
+      }
+
+      function handleDatabaseClick(event) {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const item = database.find((dbItem) => dbItem.id === button.dataset.id);
+        if (!item) return;
+
+        if (button.dataset.action === "add-db") {
+          addManagedItem({ ...item, qty: 1, sourceId: item.id });
+          setStatus(`「${item.name}」を管理欄に追加しました`, "ok");
+          return;
+        }
+
+        if (button.dataset.action === "edit-db") {
+          elements.dbEditId.value = item.id;
+          elements.dbName.value = item.name;
+          elements.dbType.value = item.type;
+          elements.dbPrice.value = item.price;
+          elements.dbWeight.value = item.weight;
+          elements.dbName.focus();
+          setStatus("DB編集フォームに読み込みました");
+          return;
+        }
+
+        if (button.dataset.action === "delete-db") {
+          if (!confirm(`DBから「${item.name}」を削除しますか？`)) return;
+          database = database.filter((dbItem) => dbItem.id !== item.id);
+          saveState();
+          renderDatabase();
+          renderManagedItems();
+          setStatus("DB項目を削除しました", "ok");
+        }
+      }
+
+      function handleManualSubmit(event) {
+        event.preventDefault();
+        const item = normalizeManagedItem({
+          name: elements.manualName.value,
+          type: elements.manualType.value,
+          price: elements.manualPrice.value,
+          weight: elements.manualWeight.value,
+          qty: elements.manualQty.value
+        });
+
+        if (!item) {
+          setStatus("名称を入力してください", "warn");
+          return;
+        }
+
+        if (elements.manualSaveDb.checked) {
+          upsertDatabase(item);
+        }
+
+        addManagedItem(item);
+        resetManualForm(false);
+        setStatus(elements.manualSaveDb.checked ? "管理欄に追加し、DBにも登録しました" : "管理欄に追加しました", "ok");
+      }
+
+      function handleManagedInput(event) {
+        const field = event.target.dataset.field;
+        if (!field) return;
+        const row = event.target.closest("tr[data-id]");
+        const item = managedItems.find((managedItem) => managedItem.id === row.dataset.id);
+        if (!item) return;
+
+        if (field === "qty") {
+          item.qty = normalizeQty(event.target.value);
+          event.target.value = item.qty;
+        } else if (field === "type") {
+          item.type = normalizeType(event.target.value);
+        } else if (field === "name") {
+          item.name = cleanText(event.target.value);
+        } else if (field === "price" || field === "weight") {
+          item[field] = cleanText(event.target.value) || "0";
+        }
+
+        saveState();
+        renderOutputs();
+        updateManagedRowDbButton(row, item);
+      }
+
+      function handleManagedClick(event) {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const row = button.closest("tr[data-id]");
+        const item = managedItems.find((managedItem) => managedItem.id === row.dataset.id);
+        if (!item) return;
+
+        if (button.dataset.action === "delete-line") {
+          managedItems = managedItems.filter((managedItem) => managedItem.id !== item.id);
+          saveState();
+          renderManagedItems();
+          renderOutputs();
+          setStatus("管理欄から削除しました", "ok");
+          return;
+        }
+
+        if (button.dataset.action === "duplicate-line") {
+          const index = managedItems.findIndex((managedItem) => managedItem.id === item.id);
+          managedItems.splice(index + 1, 0, { ...item, id: makeId() });
+          saveState();
+          renderManagedItems();
+          renderOutputs();
+          setStatus("行を複製しました", "ok");
+          return;
+        }
+
+        if (button.dataset.action === "save-line-db") {
+          const result = upsertDatabase(item);
+          saveState();
+          renderDatabase();
+          renderManagedItems();
+          setStatus(result === "updated" ? "DBを更新しました" : "DBに登録しました", "ok");
+        }
+      }
+
+      async function handleJsonImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          const items = extractJsonItems(parsed);
+          if (items.length === 0) {
+            setStatus("JSON内にアイテム配列が見つかりませんでした", "warn");
+            return;
+          }
+
+          let added = 0;
+          let updated = 0;
+          items.forEach((rawItem) => {
+            const item = normalizeDbItem(rawItem);
+            if (!item) return;
+            const result = upsertDatabase(item);
+            if (result === "updated") {
+              updated += 1;
+            } else {
+              added += 1;
+            }
+          });
+
+          saveState();
+          renderAll();
+          setStatus(`JSON読込: ${added}件追加、${updated}件更新`, "ok");
+        } catch (error) {
+          setStatus("JSONの読み込みに失敗しました", "warn");
+        } finally {
+          event.target.value = "";
+        }
+      }
+
+      function exportDatabase() {
+        const payload = {
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          items: database.slice().sort(compareItems).map((item) => ({
+            "名称": item.name,
+            "種別": item.type,
+            "価格": item.price,
+            "重量": item.weight
+          }))
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `trpg-items-${formatDateForFile(new Date())}.json`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+        setStatus("DBをJSON出力しました", "ok");
+      }
+
+      function clearDatabase() {
+        if (database.length === 0) {
+          setStatus("DBはすでに空です");
+          return;
+        }
+        if (!confirm("localStorage上のアイテムDBを削除しますか？ 管理欄は残ります。")) return;
+        database = [];
+        saveState();
+        resetDbForm();
+        renderDatabase();
+        renderManagedItems();
+        setStatus("DBを削除しました", "ok");
+      }
+
+      function clearManagedItems() {
+        if (managedItems.length === 0) {
+          setStatus("管理欄はすでに空です");
+          return;
+        }
+        if (!confirm("管理欄のアイテムをすべて削除しますか？ DBは残ります。")) return;
+        managedItems = [];
+        saveState();
+        renderManagedItems();
+        renderOutputs();
+        setStatus("管理欄を空にしました", "ok");
+      }
+
+      function addManagedItem(rawItem) {
+        const item = normalizeManagedItem(rawItem);
+        if (!item) return;
+        item.id = makeId();
+        const same = managedItems.find((managedItem) =>
+          managedItem.name === item.name &&
+          managedItem.type === item.type &&
+          managedItem.price === item.price &&
+          managedItem.weight === item.weight
+        );
+
+        if (same) {
+          same.qty += item.qty;
+        } else {
+          managedItems.push(item);
+        }
+
+        saveState();
+        renderManagedItems();
+        renderOutputs();
+      }
+
+      function updateManagedRowDbButton(row, item) {
+        const button = row.querySelector('button[data-action="save-line-db"]');
+        if (!button) return;
+        const isRegistered = Boolean(findExactDbMatch(item));
+        button.disabled = isRegistered;
+        button.textContent = isRegistered ? "DB登録済" : "DB登録";
+      }
+
+      function upsertDatabase(rawItem) {
+        const item = normalizeDbItem(rawItem);
+        if (!item) return "skipped";
+        const sameIndex = database.findIndex((dbItem) => makeDbKey(dbItem) === makeDbKey(item));
+        if (sameIndex >= 0) {
+          database[sameIndex] = { ...item, id: database[sameIndex].id };
+          return "updated";
+        }
+        database.push(item);
+        return "added";
+      }
+
+      function findExactDbMatch(item) {
+        return database.find((dbItem) =>
+          dbItem.name === item.name &&
+          dbItem.type === item.type &&
+          dbItem.price === item.price &&
+          dbItem.weight === item.weight
+        );
+      }
+
+      function resetDbForm() {
+        elements.dbEditId.value = "";
+        elements.dbName.value = "";
+        elements.dbType.value = DEFAULT_TYPE;
+        elements.dbPrice.value = "0";
+        elements.dbWeight.value = "0";
+      }
+
+      function resetManualForm(resetCheck = true) {
+        elements.manualName.value = "";
+        elements.manualType.value = DEFAULT_TYPE;
+        elements.manualQty.value = "1";
+        elements.manualPrice.value = "0";
+        elements.manualWeight.value = "0";
+        if (resetCheck) elements.manualSaveDb.checked = false;
+      }
+
+      function buildCarryOutput() {
+        const sections = [];
+        PORTABLE_TYPES.forEach((type) => {
+          const rows = sortedItemsForType(type);
+          if (rows.length === 0) return;
+          sections.push([type, ...rows.map(formatCarryLine)].join("\n"));
+        });
+        return sections.join("\n\n");
+      }
+
+      function buildLedgerOutput() {
+        const sections = [];
+        const equipmentRows = EQUIPMENT_TYPES.flatMap((type) => sortedItemsForType(type));
+        if (equipmentRows.length > 0) {
+          sections.push(["装備", ...equipmentRows.map(formatLedgerLine)].join("\n"));
+        }
+
+        PORTABLE_TYPES.forEach((type) => {
+          const rows = sortedItemsForType(type);
+          if (rows.length === 0) return;
+          sections.push([type, ...rows.map(formatLedgerLine)].join("\n"));
+        });
+
+        return sections.join("\n\n");
+      }
+
+      function sortedItemsForType(type) {
+        return managedItems
+          .filter((item) => item.type === type && item.name && item.qty > 0)
+          .slice()
+          .sort((a, b) => a.name.localeCompare(b.name, "ja"));
+      }
+
+      function formatCarryLine(item) {
+        const qtySuffix = item.qty > 1 ? `*${item.qty}` : "";
+        if (item.type === "収納") {
+          return `${item.name}${qtySuffix}`;
+        }
+        if (isWeightOne(item.weight)) {
+          return `${item.name}@[${item.qty}]`;
+        }
+        return `${item.name}@[${item.weight}${qtySuffix}]`;
+      }
+
+      function formatLedgerLine(item) {
+        const qtySuffix = item.qty > 1 ? `*${item.qty}` : "";
+        return `${item.name}::-${normalizeCostForOutput(item.price)}${qtySuffix}`;
+      }
+
+      function extractJsonItems(parsed) {
+        if (Array.isArray(parsed)) return parsed;
+        if (parsed && Array.isArray(parsed.items)) return parsed.items;
+        if (parsed && Array.isArray(parsed.database)) return parsed.database;
+        if (parsed && Array.isArray(parsed["アイテム"])) return parsed["アイテム"];
+        return [];
+      }
+
+      function normalizeDbItem(raw) {
+        if (!raw || typeof raw !== "object") return null;
+        const name = cleanText(raw.name ?? raw["名称"] ?? raw.itemName ?? raw.title);
+        if (!name) return null;
+        return {
+          id: cleanText(raw.id) || makeId(),
+          name,
+          type: normalizeType(raw.type ?? raw["種別"] ?? raw.category ?? raw.kind),
+          price: cleanText(raw.price ?? raw["価格"] ?? raw.cost) || "0",
+          weight: cleanText(raw.weight ?? raw["重量"]) || "0"
+        };
+      }
+
+      function normalizeManagedItem(raw) {
+        const item = normalizeDbItem(raw);
+        if (!item) return null;
+        return {
+          ...item,
+          id: cleanText(raw.id) || makeId(),
+          sourceId: cleanText(raw.sourceId) || cleanText(raw.itemId) || "",
+          qty: normalizeQty(raw.qty ?? raw["個数"] ?? raw.count)
+        };
+      }
+
+      function normalizeQty(value) {
+        const number = Number.parseInt(value, 10);
+        if (!Number.isFinite(number) || number < 1) return 1;
+        return number;
+      }
+
+      function normalizeType(type) {
+        const value = cleanText(type);
+        return TYPE_ORDER.includes(value) ? value : DEFAULT_TYPE;
+      }
+
+      function normalizeCostForOutput(value) {
+        const text = cleanText(value) || "0";
+        return text.replace(/^[+-]+/, "") || "0";
+      }
+
+      function formatManagedTotal() {
+        let total = 0;
+        let skipped = 0;
+
+        managedItems.forEach((item) => {
+          const price = parsePrice(item.price);
+          if (price === null) {
+            skipped += 1;
+            return;
+          }
+          total += price * item.qty;
+        });
+
+        const suffix = skipped > 0 ? ` / ${skipped}件未集計` : "";
+        return `合計 ${formatNumber(total)}${suffix}`;
+      }
+
+      function parsePrice(value) {
+        const text = cleanText(value).replace(/,/g, "");
+        if (text === "") return 0;
+        if (!/^-?\d+(\.\d+)?$/.test(text)) return null;
+        const number = Number(text);
+        return Number.isFinite(number) ? number : null;
+      }
+
+      function isWeightOne(value) {
+        const text = cleanText(value).replace(/,/g, "");
+        if (!/^\+?1(?:\.0+)?$/.test(text)) return false;
+        return Number(text) === 1;
+      }
+
+      function formatNumber(value) {
+        return Number.isInteger(value) ? value.toLocaleString("ja-JP") : value.toLocaleString("ja-JP", { maximumFractionDigits: 3 });
+      }
+
+      function cleanText(value) {
+        return String(value ?? "").trim();
+      }
+
+      function normalizeSearch(value) {
+        return cleanText(value).toLocaleLowerCase("ja-JP");
+      }
+
+      function compareItems(a, b) {
+        const typeDiff = TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type);
+        if (typeDiff !== 0) return typeDiff;
+        return a.name.localeCompare(b.name, "ja");
+      }
+
+      function makeDbKey(item) {
+        return `${item.type}\u0000${item.name}`.toLocaleLowerCase("ja-JP");
+      }
+
+      function makeId() {
+        const randomPart = Math.random().toString(36).slice(2, 9);
+        return `${Date.now().toString(36)}-${randomPart}`;
+      }
+
+      function typeOptionsHtml(selected) {
+        const equipment = EQUIPMENT_TYPES.map((type) => optionHtml(type, selected)).join("");
+        const portable = PORTABLE_TYPES.map((type) => optionHtml(type, selected)).join("");
+        return `<optgroup label="装備">${equipment}</optgroup><optgroup label="携帯品・収納">${portable}</optgroup>`;
+      }
+
+      function optionHtml(type, selected) {
+        return `<option value="${escapeAttr(type)}" ${type === selected ? "selected" : ""}>${escapeHtml(type)}</option>`;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function escapeAttr(value) {
+        return escapeHtml(value);
+      }
+
+      function formatDateForFile(date) {
+        const pad = (number) => String(number).padStart(2, "0");
+        return [
+          date.getFullYear(),
+          pad(date.getMonth() + 1),
+          pad(date.getDate()),
+          "-",
+          pad(date.getHours()),
+          pad(date.getMinutes()),
+          pad(date.getSeconds())
+        ].join("");
+      }
+
+      async function copyText(text, message) {
+        if (!text) {
+          setStatus("コピー対象が空です", "warn");
+          return;
+        }
+
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            fallbackCopy(text);
+          }
+          setStatus(message, "ok");
+        } catch (error) {
+          fallbackCopy(text);
+          setStatus(message, "ok");
+        }
+      }
+
+      function fallbackCopy(text) {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.inset = "0 auto auto 0";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        textarea.remove();
+      }
+
+      function setStatus(message, mode = "") {
+        window.clearTimeout(statusTimer);
+        elements.status.textContent = message;
+        elements.status.className = `status ${mode}`.trim();
+        statusTimer = window.setTimeout(() => {
+          elements.status.textContent = "準備完了";
+          elements.status.className = "status";
+        }, 3500);
+      }
+
+      initialize();
+    })();
+  </script>
+</body>
+
+</html>
