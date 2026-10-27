@@ -24,6 +24,10 @@
       box-sizing: border-box;
     }
 
+    [hidden] {
+      display: none !important;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -54,6 +58,7 @@
 
     .mode-switch {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       margin-bottom: 20px;
     }
@@ -282,8 +287,20 @@
       border-color: var(--accent-dark);
     }
 
+    .guild-payment {
+      margin: 0;
+    }
+
+    .guild-payment input {
+      width: 90px;
+      margin-left: 6px;
+    }
+
     body.mode-pl .gm-only,
-    body.mode-integrated .gm-save-only {
+    body.mode-integrated .gm-save-only,
+    body.mode-bulk .gm-save-only,
+    body.mode-bulk .individual-output,
+    body:not(.mode-bulk) .bulk-only {
       display: none;
     }
 
@@ -322,6 +339,7 @@
       <button class="mode-button active" type="button" id="gmModeButton" aria-pressed="true">GM用</button>
       <button class="mode-button" type="button" id="plModeButton" aria-pressed="false">PL用</button>
       <button class="mode-button" type="button" id="integratedModeButton" aria-pressed="false">統合</button>
+      <button class="mode-button" type="button" id="bulkModeButton" aria-pressed="false">一括</button>
     </div>
 
 
@@ -380,7 +398,7 @@
       <p class="status" id="sessionStatus" aria-live="polite"></p>
     </section>
 
-    <section aria-labelledby="output-heading">
+    <section class="individual-output" aria-labelledby="output-heading">
       <h2 id="output-heading">参加者</h2>
       <div class="output" id="output"></div>
       <div class="actions">
@@ -389,15 +407,63 @@
       </div>
     </section>
 
-    <section class="pl-only" aria-labelledby="guild-output-heading">
-      <h2 id="guild-output-heading">ギルド出力</h2>
+    <section class="pl-only individual-output" aria-labelledby="guild-output-heading">
+      <h2 id="guild-output-heading">ギルド出力（保管所）</h2>
       <div class="output" id="guildOutput"></div>
       <div class="actions">
         <button class="secondary" type="button" id="copyGuildOutput">コピー</button>
       </div>
     </section>
 
-    <section class="gm-only" aria-labelledby="rich-output-heading">
+    <section class="pl-only individual-output" aria-labelledby="guild-ytsheet-output-heading">
+      <h2 id="guild-ytsheet-output-heading">ギルド出力（ゆとシート）</h2>
+      <div class="session-fields" id="guildYtsheetOutput">
+        <div>
+          <label for="guildYtsheetDate">日付</label>
+          <div class="input-with-button">
+            <input id="guildYtsheetDate" type="text" data-guild-field="date" readonly>
+            <button class="secondary copy-session-field" type="button" data-copy-target="guildYtsheetDate">コピー</button>
+          </div>
+        </div>
+        <div>
+          <label for="guildYtsheetTitle">タイトル</label>
+          <div class="input-with-button">
+            <input id="guildYtsheetTitle" type="text" data-guild-field="title" readonly>
+            <button class="secondary copy-session-field" type="button" data-copy-target="guildYtsheetTitle">コピー</button>
+          </div>
+        </div>
+        <div>
+          <label for="guildYtsheetGrowthPoint">成長点</label>
+          <div class="input-with-button">
+            <input id="guildYtsheetGrowthPoint" type="text" data-guild-field="growthPoint" readonly>
+            <button class="secondary copy-session-field" type="button" data-copy-target="guildYtsheetGrowthPoint">コピー</button>
+          </div>
+        </div>
+        <div>
+          <label for="guildYtsheetGm">GM</label>
+          <div class="input-with-button">
+            <input id="guildYtsheetGm" type="text" data-guild-field="gmName" readonly>
+            <button class="secondary copy-session-field" type="button" data-copy-target="guildYtsheetGm">コピー</button>
+          </div>
+        </div>
+        <div>
+          <label for="guildYtsheetParticipants">参加者</label>
+          <div class="input-with-button">
+            <textarea id="guildYtsheetParticipants" data-guild-field="participants" readonly></textarea>
+            <button class="secondary copy-session-field" type="button" data-copy-target="guildYtsheetParticipants">コピー</button>
+          </div>
+        </div>
+        <div>
+          <label for="guildYtsheetNote">補足</label>
+          <div class="input-with-button">
+            <textarea id="guildYtsheetNote" data-guild-field="note" readonly></textarea>
+            <button class="secondary copy-session-field" type="button" data-copy-target="guildYtsheetNote">コピー</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gm-only individual-output" aria-labelledby="rich-output-heading">
       <h2 id="rich-output-heading">リッチな出力</h2>
       <div class="output" id="richOutput"></div>
       <div class="actions">
@@ -405,12 +471,25 @@
       </div>
     </section>
 
-    <section class="gm-only" aria-labelledby="log-output-heading">
+    <section class="gm-only individual-output" aria-labelledby="log-output-heading">
       <h2 id="log-output-heading">ログ集積所</h2>
       <div class="output" id="logOutput"></div>
       <div class="actions">
         <button class="secondary" type="button" id="copyLogOutput">コピー</button>
       </div>
+    </section>
+
+    <section class="bulk-only" id="bulkJsonSection" aria-labelledby="bulk-json-heading" hidden>
+      <h2 id="bulk-json-heading">JSON</h2>
+      <p>「ギルド」を選択したPCから、履歴を追加するPCを選んでください。所属ギルドも自動で読み込みます。</p>
+      <div class="actions" id="bulkJsonCandidates"></div>
+      <p class="status" id="bulkJsonStatus" aria-live="polite"></p>
+      <div class="output" id="bulkJsonPreview" hidden></div>
+      <div class="actions">
+        <button class="secondary" type="button" id="copyBulkPcJson" disabled>PCのJSONをコピー</button>
+        <button class="secondary" type="button" id="copyBulkGuildJson" disabled>ギルドのJSONをコピー</button>
+      </div>
+      <p>各シートの編集画面で「別のデータを開く」からコピーしたJSONを取り込み、内容を確認して保存してください。</p>
     </section>
   </main>
 
@@ -420,6 +499,7 @@
     const sessionStatus = document.querySelector("#sessionStatus");
     const output = document.querySelector("#output");
     const guildOutput = document.querySelector("#guildOutput");
+    const guildYtsheetFields = document.querySelectorAll("#guildYtsheetOutput [data-guild-field]");
     const richOutput = document.querySelector("#richOutput");
     const logOutput = document.querySelector("#logOutput");
     const addUrlButton = document.querySelector("#addUrl");
@@ -432,6 +512,13 @@
     const gmModeButton = document.querySelector("#gmModeButton");
     const plModeButton = document.querySelector("#plModeButton");
     const integratedModeButton = document.querySelector("#integratedModeButton");
+    const bulkModeButton = document.querySelector("#bulkModeButton");
+    const bulkJsonSection = document.querySelector("#bulkJsonSection");
+    const bulkJsonCandidates = document.querySelector("#bulkJsonCandidates");
+    const bulkJsonStatus = document.querySelector("#bulkJsonStatus");
+    const bulkJsonPreview = document.querySelector("#bulkJsonPreview");
+    const copyBulkPcJsonButton = document.querySelector("#copyBulkPcJson");
+    const copyBulkGuildJsonButton = document.querySelector("#copyBulkGuildJson");
     const saveGmNameButton = document.querySelector("#saveGmName");
     const copySessionFieldButtons = document.querySelectorAll(".copy-session-field");
     const scenarioTitleInput = document.querySelector("#scenarioTitle");
@@ -443,10 +530,15 @@
     let sessionInfo = {};
     let currentMode = "gm";
     let loadedSheets = [];
+    let bulkSource = null;
+    let bulkRequestId = 0;
+    let bulkPcJson = "";
+    let bulkGuildJson = "";
     const modeGmNames = {
       gm: "",
       pl: "",
       integrated: "",
+      bulk: "",
     };
     const savedGmNameKey = "trpgSessionTool.gmName";
 
@@ -539,12 +631,45 @@ ${participants}
 \`\`\``;
     }
 
-    function buildGuildOutput() {
-      const guildMembers = loadedSheets
-        .filter((sheet) => sheet.guildEnabled)
-        .map((sheet) => `${sheet.pcName}(${sheet.level}+${sheet.level})`)
+    function buildGuildMemberNote(sheets) {
+      return sheets
+        .map((sheet) => {
+          const payment = getGuildPayment(sheet);
+          return `${sheet.pcName}(${sheet.level}${payment ? `+${payment}` : ""})`;
+        })
         .join("、");
-      return `${sessionInfo.date}「${sessionInfo.scenarioTitle}」${guildMembers}`;
+    }
+
+    function getGuildPayment(sheet, level = sheet.level) {
+      const value = String(sheet.guildPayment ?? sheet.level);
+      const max = Number(level) || 0;
+      if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) > max) {
+        throw new Error(`${sheet.pcName}の上納は0〜${max}の整数で入力してください。`);
+      }
+      return Number(value);
+    }
+
+    function getGuildGrowthPoint(sheets) {
+      return sheets.reduce((total, sheet) => total + (Number(sheet.level) || 0) + getGuildPayment(sheet), 0);
+    }
+
+    function buildGuildOutput() {
+      const guildMembers = loadedSheets.filter((sheet) => sheet.guildEnabled);
+      return `${sessionInfo.date}「${sessionInfo.scenarioTitle}」${buildGuildMemberNote(guildMembers)}`;
+    }
+
+    function buildGuildYtsheetFields() {
+      const guildMembers = loadedSheets.filter((sheet) => sheet.guildEnabled);
+      const growthPoint = getGuildGrowthPoint(guildMembers);
+      const participants = guildMembers.map((sheet) => `[${sheet.pcName}#${sheet.id}]`).join("、");
+      return {
+        date: sessionInfo.date,
+        title: sessionInfo.scenarioTitle,
+        growthPoint,
+        gmName: sessionInfo.gmName,
+        participants,
+        note: buildGuildMemberNote(guildMembers),
+      };
     }
 
     function updateGuildOutput() {
@@ -552,7 +677,199 @@ ${participants}
         return;
       }
 
-      guildOutput.textContent = buildGuildOutput();
+      try {
+        guildOutput.textContent = buildGuildOutput();
+        const fields = buildGuildYtsheetFields();
+        guildYtsheetFields.forEach((element) => {
+          element.value = fields[element.dataset.guildField];
+        });
+      } catch (error) {
+        guildOutput.textContent = "";
+        guildYtsheetFields.forEach((element) => { element.value = ""; });
+        status.className = "status error";
+        status.textContent = error.message;
+      }
+      updateBulkJson();
+    }
+
+    // APIの保存値は既にHTMLエスケープ済み。既存値は戻さず、新しい履歴だけ同じ形式にする。
+    function escapeSheetText(value) {
+      const entities = { "&": "&amp;", '"': "&quot;", "<": "&lt;", ">": "&gt;" };
+      return String(value).replace(/[&"<>]/g, (character) => entities[character]);
+    }
+
+    function decodeSheetText(value) {
+      const entities = { "&amp;": "&", "&quot;": '"', "&lt;": "<", "&gt;": ">" };
+      return String(value || "").replace(/&(?:amp|quot|lt|gt);/g, (entity) => entities[entity]);
+    }
+
+    function appendSessionHistory(source, fields) {
+      const data = structuredClone(source);
+      let lastRow = 0;
+      for (const [key, value] of Object.entries(data)) {
+        const match = key.match(/^history(\d+)[A-Z]/);
+        if (match && value !== "" && value != null) {
+          lastRow = Math.max(lastRow, Number(match[1]));
+        }
+      }
+      const count = Number(data.historyNum || 0);
+      if (!Number.isSafeInteger(count) || count < 0 || count > 100000 || !Number.isSafeInteger(lastRow) || lastRow > 100000) {
+        throw new Error("セッション履歴の行番号を確認できませんでした。");
+      }
+      const index = lastRow + 1;
+      data.historyNum = String(Math.max(count, index));
+      for (const [key, value] of Object.entries(fields)) {
+        data[`history${index}${key}`] = escapeSheetText(value);
+      }
+      // シートの内容を保持し、認証・リクエスト用パラメーターだけは持ち出さない。
+      for (const key of ["id", "pass", "_token", "mode", "IP", "registerkey", "base64mode"]) {
+        delete data[key];
+      }
+      return { data, index };
+    }
+
+    function refreshBulkCandidates() {
+      bulkRequestId += 1;
+      bulkSource = null;
+      bulkJsonSection.hidden = loadedSheets.length === 0;
+      bulkJsonCandidates.replaceChildren();
+      loadedSheets.filter((sheet) => sheet.guildEnabled).forEach((sheet) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "secondary";
+        button.textContent = sheet.pcName;
+        button.setAttribute("aria-pressed", "false");
+        button.addEventListener("click", () => loadBulkJson(sheet, button));
+        bulkJsonCandidates.append(button);
+      });
+      updateBulkJson();
+    }
+
+    function updateBulkJson() {
+      bulkPcJson = "";
+      bulkGuildJson = "";
+      bulkJsonPreview.hidden = true;
+      bulkJsonPreview.textContent = "";
+      bulkJsonStatus.className = "status";
+      bulkJsonStatus.textContent = bulkJsonCandidates.children.length
+        ? "PCを選ぶと、PCと所属ギルドの最新データを読み込みます。"
+        : "PCの「ギルド」を選択してください。";
+      const source = bulkSource;
+      try {
+        if (source?.pcData) {
+          const selected = loadedSheets.filter((sheet) => sheet.guildEnabled);
+          const levels = selected.map((sheet) => sheet === source.sheet ? source.pcData.level : sheet.level);
+          if (!levels.every((level) => /^\d+$/.test(String(level)) && Number.isSafeInteger(Number(level)) && Number(level) > 0)) {
+            throw new Error("ギルドを選択したPCのCLを確認して、PCを読み込み直してください。");
+          }
+          selected.forEach((sheet, index) => getGuildPayment(sheet, levels[index]));
+          const pc = appendSessionHistory(source.pcData, {
+            Date: sessionInfo.date,
+            Title: sessionInfo.scenarioTitle,
+            Exp: sessionInfo.growthPoint || "0",
+            Payment: getGuildPayment(source.sheet, source.pcData.level) || "",
+            Money: sessionInfo.gold || "0",
+            Gm: sessionInfo.gmName,
+            Member: buildParticipantOutput(loadedSheets),
+            Note: "",
+          });
+          bulkPcJson = JSON.stringify(pc.data);
+          const preview = [
+            `PC：${source.sheet.pcName}（履歴${pc.index}）`,
+            `${sessionInfo.date}「${sessionInfo.scenarioTitle}」／GM：${sessionInfo.gmName}`,
+            `成長点：${sessionInfo.growthPoint || 0}／上納：${getGuildPayment(source.sheet, source.pcData.level)}／ゴールド：${sessionInfo.gold || 0}`,
+          ];
+          if (source.guildData) {
+            const members = selected.map((sheet, index) => ({ ...sheet, level: levels[index] }));
+            const growthPoint = getGuildGrowthPoint(members);
+            const guild = appendSessionHistory(source.guildData, {
+              Date: sessionInfo.date,
+              Title: sessionInfo.scenarioTitle,
+              Exp: growthPoint,
+              Gm: sessionInfo.gmName,
+              Member: members.map((sheet) => `[${sheet.pcName}#${sheet.id}]`).join("、"),
+              Note: buildGuildMemberNote(members),
+            });
+            guild.data.type = "g";
+            bulkGuildJson = JSON.stringify(guild.data);
+            preview.push(`ギルド：${decodeSheetText(source.guildData.guildName)}（履歴${guild.index}）／成長点：${growthPoint}`);
+          }
+          bulkJsonPreview.textContent = preview.join("\n");
+          bulkJsonPreview.hidden = false;
+          bulkJsonStatus.textContent = "今回のセッション履歴を追加しました。各JSONをコピーできます。";
+        }
+        if (source?.loading) {
+          bulkJsonStatus.textContent = `${source.sheet.pcName}と所属ギルドを読み込み中…`;
+        } else if (source?.error) {
+          bulkJsonStatus.className = "status error";
+          bulkJsonStatus.textContent = source.error + (bulkPcJson ? " PCのJSONはコピーできます。" : "");
+        }
+      } catch (error) {
+        bulkJsonStatus.className = "status error";
+        bulkJsonStatus.textContent = error.message;
+      }
+      copyBulkPcJsonButton.disabled = !bulkPcJson || Boolean(source?.loading);
+      copyBulkGuildJsonButton.disabled = !bulkGuildJson || Boolean(source?.loading);
+    }
+
+    async function loadBulkJson(sheet, button) {
+      const requestId = ++bulkRequestId;
+      bulkSource = { sheet, pcData: null, guildData: null, loading: true, error: "" };
+      [...bulkJsonCandidates.children].forEach((candidate) => {
+        candidate.classList.toggle("primary", candidate === button);
+        candidate.classList.toggle("secondary", candidate !== button);
+        candidate.setAttribute("aria-pressed", String(candidate === button));
+      });
+      updateBulkJson();
+      try {
+        const pcData = await fetchSheetData(sheet.sheetUrl);
+        if (requestId !== bulkRequestId) return;
+        if (pcData.type === "g" || !(pcData.characterName || pcData.aka)) {
+          throw new Error("PCのキャラクターシートを取得できませんでした。");
+        }
+        bulkSource.pcData = pcData;
+        if (!pcData.guildURL || !String(pcData.guildURL).trim()) {
+          throw new Error("このPCのギルドシートURLが未設定です。PCシートで設定してから選び直してください。");
+        }
+        const guildUrl = normalizeSheetUrl(decodeSheetText(pcData.guildURL), sheet.sheetUrl);
+        const guildData = await fetchSheetData(guildUrl);
+        if (requestId !== bulkRequestId) return;
+        if (!guildData.guildName || guildData.characterName || (guildData.type && guildData.type !== "g")) {
+          throw new Error("リンク先はギルドシートではありません。PCのギルドシートURLを確認してください。");
+        }
+        bulkSource.guildData = guildData;
+      } catch (error) {
+        if (requestId !== bulkRequestId) return;
+        bulkSource.error = error.message;
+      } finally {
+        if (requestId === bulkRequestId) {
+          bulkSource.loading = false;
+          updateBulkJson();
+        }
+      }
+    }
+
+    async function copyBulkJson(kind) {
+      const text = kind === "pc" ? bulkPcJson : bulkGuildJson;
+      if (!text || bulkSource?.loading) return;
+      const textarea = document.createElement("textarea");
+      const focused = document.activeElement;
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.append(textarea);
+      try {
+        const message = `${kind === "pc" ? "PC" : "ギルド"}のJSONをコピーしました。`;
+        await copyTextFromElement(textarea, message);
+        bulkJsonStatus.className = "status";
+        bulkJsonStatus.textContent = message;
+      } catch (error) {
+        bulkJsonStatus.className = "status error";
+        bulkJsonStatus.textContent = "コピーできませんでした。ブラウザーのクリップボード権限を確認してください。";
+      } finally {
+        textarea.remove();
+        focused?.focus({ preventScroll: true });
+      }
     }
 
     function updateRichOutput() {
@@ -591,12 +908,15 @@ PL：${players}
       document.body.classList.toggle("mode-gm", mode === "gm");
       document.body.classList.toggle("mode-pl", mode === "pl");
       document.body.classList.toggle("mode-integrated", mode === "integrated");
+      document.body.classList.toggle("mode-bulk", mode === "bulk");
       gmModeButton.classList.toggle("active", mode === "gm");
       plModeButton.classList.toggle("active", mode === "pl");
       integratedModeButton.classList.toggle("active", mode === "integrated");
+      bulkModeButton.classList.toggle("active", mode === "bulk");
       gmModeButton.setAttribute("aria-pressed", String(mode === "gm"));
       plModeButton.setAttribute("aria-pressed", String(mode === "pl"));
       integratedModeButton.setAttribute("aria-pressed", String(mode === "integrated"));
+      bulkModeButton.setAttribute("aria-pressed", String(mode === "bulk"));
       saveSessionInfo();
     }
 
@@ -632,6 +952,23 @@ PL：${players}
       guildToggle.textContent = "ギルド";
       guildToggle.disabled = true;
       guildToggle.setAttribute("aria-pressed", "false");
+      const paymentLabel = document.createElement("label");
+      paymentLabel.className = "guild-payment pl-only";
+      paymentLabel.textContent = "上納";
+      paymentLabel.hidden = true;
+      const paymentInput = document.createElement("input");
+      paymentInput.type = "number";
+      paymentInput.min = "0";
+      paymentInput.step = "1";
+      paymentInput.disabled = true;
+      paymentLabel.append(paymentInput);
+      paymentInput.addEventListener("input", () => {
+        if (!row.sheet) return;
+        row.sheet.guildPayment = paymentInput.value;
+        status.className = "status";
+        status.textContent = "上納を更新しました。";
+        updateGuildOutput();
+      });
       guildToggle.addEventListener("click", () => {
         const enabled = !row.sheet?.guildEnabled;
         if (!row.sheet) {
@@ -641,6 +978,9 @@ PL：${players}
         row.sheet.guildEnabled = enabled;
         guildToggle.classList.toggle("active", enabled);
         guildToggle.setAttribute("aria-pressed", String(enabled));
+        paymentLabel.hidden = !enabled;
+        paymentInput.disabled = !enabled;
+        refreshBulkCandidates();
         updateGuildOutput();
       });
 
@@ -651,13 +991,29 @@ PL：${players}
       removeButton.addEventListener("click", () => {
         loadedSheets = loadedSheets.filter((sheet) => sheet !== row.sheet);
         row.remove();
+        refreshBulkCandidates();
         updateGuildOutput();
         if (!urlList.children.length) {
           createUrlRow();
         }
       });
 
-      resultLine.append(result, guildToggle);
+      input.addEventListener("input", () => {
+        if (!row.sheet) return;
+        loadedSheets = loadedSheets.filter((sheet) => sheet !== row.sheet);
+        row.sheet = null;
+        result.className = "sheet-result";
+        result.textContent = "URLが変更されました。読み込み直してください。";
+        guildToggle.disabled = true;
+        guildToggle.classList.remove("active");
+        guildToggle.setAttribute("aria-pressed", "false");
+        paymentLabel.hidden = true;
+        paymentInput.disabled = true;
+        refreshBulkCandidates();
+        updateGuildOutput();
+      });
+
+      resultLine.append(result, guildToggle, paymentLabel);
       field.append(label, input, resultLine);
       row.append(field, removeButton);
       urlList.append(row);
@@ -676,7 +1032,49 @@ PL：${players}
     function toJsonUrl(sheetUrl) {
       const url = new URL(sheetUrl);
       url.searchParams.set("mode", "json");
+      url.searchParams.delete("callback");
       return url.toString();
+    }
+
+    function normalizeSheetUrl(value, base) {
+      const url = new URL(value, base);
+      if (!["http:", "https:"].includes(url.protocol)) {
+        throw new Error("シートURLはhttpまたはhttpsで指定してください。");
+      }
+      const id = getSheetId(url.href);
+      url.search = "";
+      url.searchParams.set("id", id);
+      url.hash = "";
+      return url.href;
+    }
+
+    async function fetchSheetData(sheetUrl) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      try {
+        const response = await fetch(toJsonUrl(sheetUrl), { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`読み込みに失敗しました。HTTP ${response.status}`);
+        }
+        let data;
+        try {
+          data = await response.json();
+        } catch (error) {
+          throw new Error("シートのJSONを取得できませんでした。URLと閲覧権限を確認してください。");
+        }
+        if (!data || typeof data !== "object" || Array.isArray(data)) {
+          throw new Error("シートのJSON形式を確認できませんでした。");
+        }
+        if (data.result && data.result !== "OK") {
+          throw new Error(data.message || data.result);
+        }
+        return data;
+      } catch (error) {
+        if (error.name === "AbortError") throw new Error("読み込みがタイムアウトしました。もう一度選択してください。");
+        throw error;
+      } finally {
+        clearTimeout(timeout);
+      }
     }
 
     function normalizeGuildName(guildName) {
@@ -690,19 +1088,20 @@ PL：${players}
     }
 
     async function loadSheet(sheetUrl) {
+      sheetUrl = normalizeSheetUrl(sheetUrl);
       const id = getSheetId(sheetUrl);
-      const response = await fetch(toJsonUrl(sheetUrl));
-      if (!response.ok) {
-        throw new Error(`読み込みに失敗しました。HTTP ${response.status}`);
+      const data = await fetchSheetData(sheetUrl);
+      if (data.type === "g" || !(data.characterName || data.aka)) {
+        throw new Error("PCのキャラクターシートURLを入力してください。");
       }
-
-      const data = await response.json();
       return {
         id,
-        pcName: data.characterName || "PC名未設定",
-        plName: data.playerName || "PL名未設定",
-        guildName: normalizeGuildName(data.guildName),
+        sheetUrl,
+        pcName: decodeSheetText(data.characterName || data.aka),
+        plName: decodeSheetText(data.playerName) || "PL名未設定",
+        guildName: normalizeGuildName(decodeSheetText(data.guildName)),
         level: data.level || "CL未設定",
+        guildPayment: Number(data.level) || 0,
         guildEnabled: false,
       };
     }
@@ -715,6 +1114,7 @@ PL：${players}
         .map((row) => ({
           row,
           input: row.querySelector("input"),
+          sheetUrl: row.querySelector("input").value.trim(),
           result: row.querySelector(".sheet-result"),
         }))
         .filter((entry) => entry.input.value.trim());
@@ -722,12 +1122,16 @@ PL：${players}
       status.className = "status";
       output.textContent = "";
       loadedSheets = [];
+      refreshBulkCandidates();
       updateGuildOutput();
       updateRichOutput();
       updateLogOutput();
       rows.forEach((row) => {
         const result = row.querySelector(".sheet-result");
         const guildToggle = row.querySelector(".guild-toggle");
+        const paymentLabel = row.querySelector(".guild-payment");
+        paymentLabel.hidden = true;
+        paymentLabel.querySelector("input").disabled = true;
         row.sheet = null;
         result.className = "sheet-result";
         result.textContent = row.querySelector("input").value.trim() ? "読み込み待ち" : "未入力";
@@ -748,17 +1152,24 @@ PL：${players}
 
       try {
         const results = await Promise.allSettled(
-          entries.map((entry) => loadSheet(entry.input.value.trim()))
+          entries.map((entry) => loadSheet(entry.sheetUrl))
         );
         const sheets = [];
 
         results.forEach((result, index) => {
           const entry = entries[index];
+          if (!entry.row.isConnected || entry.input.value.trim() !== entry.sheetUrl) {
+            return;
+          }
           if (result.status === "fulfilled") {
             const sheet = result.value;
             sheets.push(sheet);
             entry.row.sheet = sheet;
             const guildToggle = entry.row.querySelector(".guild-toggle");
+            const paymentInput = entry.row.querySelector(".guild-payment input");
+            paymentInput.max = String(Number(sheet.level) || 0);
+            paymentInput.value = String(sheet.guildPayment);
+            paymentInput.setAttribute("aria-label", `${sheet.pcName}の上納`);
             guildToggle.disabled = false;
             guildToggle.classList.remove("active");
             guildToggle.setAttribute("aria-pressed", "false");
@@ -771,6 +1182,7 @@ PL：${players}
         });
 
         loadedSheets = sheets;
+        refreshBulkCandidates();
         output.textContent = buildParticipantOutput(sheets);
         updateGuildOutput();
         updateRichOutput();
@@ -801,16 +1213,18 @@ PL：${players}
       } else {
         const range = document.createRange();
         const selection = window.getSelection();
+        let copied;
         if ("select" in element) {
           element.select();
-          document.execCommand("copy");
+          copied = document.execCommand("copy");
         } else {
           range.selectNodeContents(element);
           selection.removeAllRanges();
           selection.addRange(range);
-          document.execCommand("copy");
+          copied = document.execCommand("copy");
           selection.removeAllRanges();
         }
+        if (!copied) throw new Error("コピーに失敗しました。");
       }
       status.className = "status";
       status.textContent = message;
@@ -820,7 +1234,7 @@ PL：${players}
     loadSheetsButton.addEventListener("click", loadSheets);
     loadSheetsInlineButton.addEventListener("click", loadSheets);
     copyOutputButton.addEventListener("click", () => copyTextFromElement(output, "出力をコピーしました。"));
-    copyGuildOutputButton.addEventListener("click", () => copyTextFromElement(guildOutput, "ギルド出力をコピーしました。"));
+    copyGuildOutputButton.addEventListener("click", () => copyTextFromElement(guildOutput, "ギルド出力（保管所）をコピーしました。"));
     copyRichOutputButton.addEventListener("click", () => copyTextFromElement(richOutput, "リッチな出力をコピーしました。"));
     copyLogOutputButton.addEventListener("click", () => copyTextFromElement(logOutput, "ログ集積所をコピーしました。"));
     saveGmNameButton.addEventListener("click", saveGmName);
@@ -834,6 +1248,9 @@ PL：${players}
     gmModeButton.addEventListener("click", () => setMode("gm"));
     plModeButton.addEventListener("click", () => setMode("pl"));
     integratedModeButton.addEventListener("click", () => setMode("integrated"));
+    bulkModeButton.addEventListener("click", () => setMode("bulk"));
+    copyBulkPcJsonButton.addEventListener("click", () => copyBulkJson("pc"));
+    copyBulkGuildJsonButton.addEventListener("click", () => copyBulkJson("guild"));
     [scenarioTitleInput, sessionDateInput, gmNameInput, growthPointInput, goldInput]
       .forEach((input) => input.addEventListener("input", saveSessionInfo));
 
