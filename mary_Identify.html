@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ゆとシートⅡのAR2Eエネミーシートから、選んだ項目だけを識別情報として出力・コピーします。">
+  <title>エネミー識別出力 | AR2E</title>
+  <style>
+    :root { color-scheme: light; --bg:#f5f3ed; --paper:#fffefa; --ink:#263a35; --muted:#65716a; --line:#dedfd5; --accent:#32644f; --soft:#edf2e9; --error:#a02e2e; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:"BIZ UDPGothic","Yu Gothic UI","Meiryo",sans-serif; font-size:14px; line-height:1.7; }
+    button, input, textarea { font:inherit; }
+    button { cursor:pointer; }
+    button:disabled { opacity:.48; cursor:default; }
+    :focus-visible { outline:3px solid #b77a35; outline-offset:3px; }
+    .app { width:min(1160px,100%); margin:auto; padding:40px 28px 28px; }
+    .masthead { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:25px; }
+    .eyebrow { margin:0 0 5px; color:var(--accent); font-size:11px; font-weight:700; letter-spacing:.17em; }
+    h1 { margin:0; font-size:clamp(25px,4vw,34px); letter-spacing:.04em; line-height:1.45; }
+    .lead { margin:8px 0 0; color:var(--muted); }
+    .badge { flex-shrink:0; padding:5px 12px; border:1px solid #c6d3c1; border-radius:30px; color:var(--accent); font-size:12px; }
+    .panel { border:1px solid var(--line); border-radius:12px; background:var(--paper); box-shadow:0 4px 18px #24392e04; }
+    .source { padding:22px 24px 16px; margin-bottom:22px; }
+    .source-label { display:block; font-weight:700; margin-bottom:9px; }
+    .source-row { display:flex; gap:10px; }
+    input[type="url"] { min-width:0; flex:1; padding:11px 13px; border:1px solid #bcc8bc; border-radius:6px; color:var(--ink); background:#fff; }
+    input::placeholder { color:#7d877f; }
+    .primary { padding:11px 21px; border:1px solid var(--accent); border-radius:6px; color:#fff; background:var(--accent); font-weight:700; white-space:nowrap; }
+    .primary:hover:enabled { background:#244e3d; }
+    .secondary { padding:6px 11px; border:1px solid var(--line); border-radius:5px; color:var(--ink); background:var(--paper); }
+    .secondary:hover:enabled { background:var(--soft); }
+    .source-foot { display:flex; align-items:center; flex-wrap:wrap; gap:5px 18px; margin-top:10px; }
+    .hint { margin:0; font-size:12px; color:var(--muted); }
+    .status { margin:10px 0 0; min-height:1.7em; font-size:13px; overflow-wrap:anywhere; }
+    .status[data-tone="error"] { color:var(--error); }
+    .status[data-tone="success"] { color:var(--accent); }
+    .workspace { display:grid; grid-template-columns:310px minmax(0,1fr); gap:22px; align-items:start; }
+    .panel-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:19px 21px 14px; border-bottom:1px solid var(--line); }
+    h2 { margin:0; font-size:16px; }
+    .count { color:var(--muted); font-size:12px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+    .presets { display:flex; flex-wrap:wrap; gap:7px; padding:14px 18px 8px; }
+    .presets button { font-size:12px; padding:5px 9px; }
+    fieldset { border:0; margin:0; padding:9px 18px 12px; min-width:0; }
+    fieldset + fieldset { border-top:1px solid #eeeee6; }
+    legend { float:left; width:100%; margin-bottom:5px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.09em; }
+    legend + * { clear:both; }
+    .option { display:flex; gap:9px; align-items:center; padding:6px 8px; margin:1px -4px; border-radius:5px; cursor:pointer; line-height:1.5; }
+    .option:has(input:checked) { background:var(--soft); }
+    .option:hover { background:#e4eddf; }
+    input[type="checkbox"], input[type="radio"] { accent-color:var(--accent); width:16px; height:16px; margin:0; flex-shrink:0; cursor:pointer; }
+    .mode-option { margin:9px 0; padding:5px 8px 8px; border:1px solid var(--line); border-radius:6px; }
+    .mode-option legend { float:none; width:auto; margin:0; padding:0 4px; color:var(--ink); font-size:13px; letter-spacing:0; }
+    .mode-option .option { font-size:12px; }
+    .mode-hint { margin:3px 4px 0; font-size:11px; color:var(--muted); }
+    .settings-note { padding:0 21px 18px; }
+    .output-panel { overflow:hidden; }
+    .output-panel .panel-head { padding:15px 21px; }
+    .output-panel .primary { padding:8px 17px; }
+    .output-meta { padding:10px 21px; background:#f4f5ee; color:var(--muted); font-size:12px; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+    #output { display:block; width:100%; min-height:600px; padding:23px; resize:vertical; border:0; border-radius:0; color:#263830; background:var(--paper); font-family:"BIZ UDPGothic","Yu Gothic UI","Meiryo",sans-serif; font-size:14px; line-height:1.95; tab-size:2; }
+    #output::placeholder { color:#838c82; }
+    .output-foot { display:flex; justify-content:space-between; gap:12px; padding:11px 21px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+    footer { margin-top:23px; color:var(--muted); font-size:11px; }
+    @media (max-width:760px) {
+      .app { padding:24px 16px; }
+      .masthead { align-items:flex-start; }
+      .badge { display:none; }
+      .source { padding:17px; }
+      .workspace { grid-template-columns:1fr; gap:16px; }
+      .settings-fields { display:grid; grid-template-columns:1fr 1fr; }
+      fieldset + fieldset { border-top:0; }
+      .settings-fields > fieldset:last-child { grid-column:1/-1; border-top:1px solid #eeeee6; }
+      #output { min-height:440px; padding:18px; }
+    }
+    @media (max-width:440px) {
+      .source-row { flex-direction:column; }
+      .source-row .primary { width:100%; }
+      .settings-fields { grid-template-columns:1fr; }
+      fieldset + fieldset { border-top:1px solid #eeeee6; }
+      .output-panel .panel-head { padding:14px; }
+      .output-foot { flex-wrap:wrap; }
+    }
+    @media (prefers-reduced-motion:no-preference) { button { transition:background .15s; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">ARIANRHOD 2E / GM TOOL</p>
+        <h1>エネミー識別出力</h1>
+        <p class="lead">シートを読み込んで、伝えたい情報だけをコピー。</p>
+      </div>
+      <span class="badge">ゆとシートⅡ 対応</span>
+    </header>
+
+    <section class="panel source" aria-label="エネミーの読み込み">
+      <form id="loadForm" novalidate>
+        <label for="sheetUrl" class="source-label">ゆとシートのエネミーURL</label>
+        <div class="source-row">
+          <input id="sheetUrl" type="url" placeholder="https://yutorize.work/ytsheet/ar2e/?id=xxxxxx" autocomplete="off" spellcheck="false" aria-describedby="sourceHint status" required>
+          <button id="loadButton" class="primary" type="submit">読み込んで出力</button>
+        </div>
+      </form>
+      <div class="source-foot">
+        <p id="sourceHint" class="hint">閲覧できるAR2EエネミーシートのURLを入力してください。</p>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite">URLを入力したら「読み込んで出力」を押してください。</p>
+    </section>
+
+    <div class="workspace">
+      <section class="panel" aria-labelledby="settingsHeading">
+        <div class="panel-head">
+          <h2 id="settingsHeading">出力する項目</h2>
+          <span id="selectedCount" class="count"></span>
+        </div>
+        <div class="presets" aria-label="項目の一括選択">
+          <button id="defaultButton" class="secondary" type="button">初期設定</button>
+          <button id="allButton" class="secondary" type="button">すべて選択</button>
+          <button id="noneButton" class="secondary" type="button">すべて解除</button>
+        </div>
+        <div id="settingsFields" class="settings-fields"></div>
+        <p class="hint settings-note">選択すると出力が更新されます。<br>項目の設定はこのブラウザーに保存します。<br>モブの能力値は能動・受動を表示します。</p>
+      </section>
+
+      <section class="panel output-panel" aria-labelledby="outputHeading">
+        <div class="panel-head">
+          <h2 id="outputHeading">識別テキスト</h2>
+          <button id="copyButton" class="primary" type="button" disabled>テキストをコピー</button>
+        </div>
+        <div id="outputMeta" class="output-meta">シートはまだ読み込まれていません</div>
+        <textarea id="output" aria-label="出力された識別テキスト" placeholder="ここに識別テキストが表示されます。&#10;&#10;左のチェックボックスで、出力する項目を選べます。" readonly spellcheck="false"></textarea>
+        <div class="output-foot">
+          <span>選択した設定で出力</span>
+          <span id="characterCount">0文字</span>
+        </div>
+      </section>
+    </div>
+    <footer>
+      本作は、「著：菊池たけし／F.E.A.R」が権利を有する『アリアンロッドRPG2E』の二次創作作品です。<br>
+      (C)F.E.A.R. 「アリアンロッドRPG 2E」<br>
+      シートは指定先から直接取得し、シートの内容やURLは保存しません。
+    </footer>
+  </main>
+
+  <script>
+    "use strict";
+
+    const OPTION_GROUPS = [
+      { label: "基本情報", fields: [
+        ["name", "名称", true],
+        ["kind", "種別（ソロ／モブ）", true],
+        ["taxon", "分類", true],
+        ["defense", "防御力", "compare", [["none", "出力しない"], ["compare", "どちらが高いか"], ["values", "数値を出力"]]],
+        ["element", "属性", true],
+        ["level", "EL", true],
+        ["identify", "識別値", false]
+      ] },
+      { label: "能力・戦闘", fields: [
+        ["abilities", "能力値", false],
+        ["attacks", "攻撃手法", false],
+        ["dodge", "回避", false],
+        ["hp", "HP", false],
+        ["mp", "MP", false],
+        ["initiative", "行動値", false],
+        ["mobility", "移動力", false]
+      ] },
+      { label: "詳細情報", fields: [
+        ["skills", "エネミースキル", "named", [["none", "出力しない"], ["named", "《》始まりの行だけ出力"], ["all", "すべて出力"]]],
+        ["description", "解説", false],
+        ["loot", "ドロップ品", false]
+      ] }
+    ];
+    const FIELDS = OPTION_GROUPS.flatMap(group => group.fields);
+    const STORAGE_KEY = "ar2e.enemyIdentify.options.v1";
+    const $ = id => document.getElementById(id);
+    const optionControls = new Map();
+    let currentData = null;
+    let currentLabel = "";
+    let activeRequest = null;
+
+    // APIの保存用文字参照は一段だけ復号する。外部文字列をHTMLに挿入しない。
+    function decodeText(value, trim = true) {
+      const entities = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+      const text = String(value ?? "").replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (match, code) => {
+        if (code[0] !== "#") return entities[code.toLowerCase()];
+        const point = code[1].toLowerCase() === "x" ? parseInt(code.slice(2), 16) : Number(code.slice(1));
+        return point > 0 && point <= 0x10ffff && !(point >= 0xd800 && point <= 0xdfff) ? String.fromCodePoint(point) : match;
+      }).replace(/<br\s*\/?\s*>/gi, "\n").replace(/\r\n?/g, "\n");
+      return trim ? text.trim() : text;
+    }
+
+    function valueOf(data, key, fallback = "-") {
+      return decodeText(data[key]) || fallback;
+    }
+
+    function numberOf(value) {
+      const text = String(value ?? "").trim();
+      if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text)) return null;
+      const number = Number(text);
+      return Number.isFinite(number) ? number : null;
+    }
+
+    function isMob(data) {
+      return data.isMob === true || data.isMob === 1 || data.isMob === "1";
+    }
+
+    function diceText(fixed, dice) {
+      const base = decodeText(fixed);
+      const count = decodeText(dice);
+      if (!base && !count) return "-";
+      return `${base || "0"}+${count || "0"}D`;
+    }
+
+    function rowNumbers(data, prefix, suffixes) {
+      const pattern = new RegExp(`^${prefix}([1-9]\\d*)(${suffixes.join("|")})$`);
+      const count = numberOf(data[`${prefix}Num`]);
+      return [...new Set(Object.keys(data).map(key => key.match(pattern)).filter(Boolean).map(match => Number(match[1])))]
+        .filter(n => count === null || count <= 0 || n <= count).sort((a, b) => a - b);
+    }
+
+    function buildAttacks(data) {
+      const suffixes = ["Name", "Acc", "AccDice", "Dmg", "DmgDice", "Type", "DmgType", "Range"];
+      return rowNumbers(data, "attack", suffixes).filter(n => suffixes.some(key => decodeText(data[`attack${n}${key}`])))
+        .map(n => {
+          const key = `attack${n}`;
+          const type = valueOf(data, `${key}Type`);
+          const damageType = valueOf(data, `${key}DmgType`, "");
+          return `${valueOf(data, `${key}Name`)}、命中：${diceText(data[`${key}Acc`], data[`${key}AccDice`])}/ダメージ${diceText(data[`${key}Dmg`], data[`${key}DmgDice`])}、${type}${damageType ? `(${damageType})` : ""}、${valueOf(data, `${key}Range`)}`;
+        }).join("\n") || "-";
+    }
+
+    function buildAbilities(data) {
+      if (isMob(data)) return `能動：${valueOf(data, "action")}\n受動：${valueOf(data, "reaction")}`;
+      return [["筋力", "Str"], ["器用", "Dex"], ["敏捷", "Agi"], ["知力", "Int"], ["感知", "Sen"], ["精神", "Mnd"], ["幸運", "Luk"]]
+        .map(([label, key]) => {
+          const base = numberOf(data[`stt${key}Base`]);
+          const calculated = valueOf(data, `stt${key}`, base === null ? "-" : String(Math.trunc(base / 3)));
+          return `${label}：${valueOf(data, `stt${key}Base`)}／${calculated}`;
+        }).join("\n");
+    }
+
+    function buildLoot(data) {
+      return rowNumbers(data, "loot", ["Num", "Item"]).filter(n => decodeText(data[`loot${n}Item`]))
+        .map(n => `${valueOf(data, `loot${n}Num`)}：${valueOf(data, `loot${n}Item`)}`).join("\n") || "-";
+    }
+
+    function buildSkills(data, mode) {
+      const text = decodeText(data.skills, false);
+      if (mode === "named") return text.split("\n").filter(line => line.startsWith("《")).join("\n") || "-";
+      return text.trim() || "-";
+    }
+
+    function buildOutput(data, selected) {
+      const sections = [];
+      const basic = [];
+      if (selected.name) basic.push(`名称：${valueOf(data, "enemyName")}`);
+      if (selected.kind) basic.push(isMob(data) ? "モブエネミー" : "ソロエネミー");
+      const summary = [];
+      if (selected.taxon) summary.push(`分類：${valueOf(data, "taxon")}`);
+      if (selected.element) summary.push(`属性：${valueOf(data, "element").replace(/[,，]/g, "、").replace(/^[―—－ー−–]+$/, "-")}`);
+      if (selected.level) summary.push(`EL：${valueOf(data, "level")}`);
+      if (summary.length) basic.push(summary.join("、"));
+      if (selected.identify) basic.push(`識別値：${valueOf(data, "identifyTarget")}`);
+      if (selected.defense === "values") {
+        basic.push(`防御力：${valueOf(data, "armorP")}／${valueOf(data, "armorM")}`);
+      } else if (selected.defense === "compare") {
+        const physical = numberOf(data.armorP), magical = numberOf(data.armorM);
+        basic.push(physical === null || magical === null ? "防御力の比較：不明"
+          : physical === magical ? "物理防御力と魔法防御力が同じ"
+          : physical > magical ? "物理防御力の方が高い" : "魔法防御力の方が高い");
+      }
+      if (basic.length) sections.push(basic.join("\n"));
+      if (selected.abilities) sections.push(`能力値：\n${buildAbilities(data)}`);
+      const combat = [];
+      const stats = [["hp", "HP"], ["mp", "MP"], ["initiative", "行動値"], ["mobility", "移動力"]]
+        .filter(([key]) => selected[key]).map(([key, label]) => `${label}：${valueOf(data, key)}`);
+      if (stats.length) combat.push(stats.join("、"));
+      if (selected.dodge) combat.push(`回避：${diceText(data.dodge, data.dodgeDice)}`);
+      if (combat.length) sections.push(combat.join("\n"));
+      if (selected.attacks) sections.push(`攻撃：\n${buildAttacks(data)}`);
+      if (selected.skills && selected.skills !== "none") sections.push(`エネミースキル：\n${buildSkills(data, selected.skills)}`);
+      if (selected.description) sections.push(`解説：\n${valueOf(data, "description")}`);
+      if (selected.loot) sections.push(`ドロップ品：\n${buildLoot(data)}`);
+      return sections.join("\n\n");
+    }
+
+    // id/log以外の操作用パラメーターは引き継がず、JSON取得だけを行う。
+    function toJsonUrl(input) {
+      let url;
+      try { url = new URL(input.trim()); }
+      catch { throw new Error("URLの形式を確認してください。https:// から始まるシートURLを入力してください。"); }
+      if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) {
+        throw new Error("http または https のシートURLを入力してください。認証情報を含むURLは使えません。");
+      }
+      const id = url.searchParams.get("id");
+      if (!id?.trim()) throw new Error("URLにシートID（?id=…）がありません。エネミーシートの閲覧URLを入力してください。");
+      const log = url.searchParams.get("log");
+      url.search = "";
+      url.hash = "";
+      url.searchParams.set("id", id);
+      if (log) url.searchParams.set("log", log);
+      url.searchParams.set("mode", "json");
+      return url.href;
+    }
+
+    function validateEnemy(data) {
+      if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("取得したデータがシートのJSON形式ではありません。");
+      if (data.result && data.result !== "OK") throw new Error("シートを取得できませんでした。URLと閲覧権限を確認してください。");
+      if (data.type !== "e" || typeof data.enemyName !== "string" || !data.enemyName.trim()) {
+        throw new Error("AR2Eのエネミーシートではありません。PCやギルドのURLではなく、エネミーのURLを入力してください。");
+      }
+      return data;
+    }
+
+    function setStatus(message, tone = "") {
+      $("status").textContent = message;
+      $("status").dataset.tone = tone;
+    }
+
+    function selection() {
+      return Object.fromEntries([...optionControls].map(([key, inputs]) => [key,
+        inputs[0].type === "checkbox" ? inputs[0].checked : inputs.find(input => input.checked).value
+      ]));
+    }
+
+    function setOption(key, value) {
+      for (const input of optionControls.get(key)) input.checked = input.type === "checkbox" ? Boolean(value) : input.value === value;
+    }
+
+    function renderOutput() {
+      const selected = selection();
+      const count = Object.values(selected).filter(value => value && value !== "none").length;
+      $("selectedCount").textContent = `${count} / ${FIELDS.length} 項目`;
+      $("output").value = currentData ? buildOutput(currentData, selected) : "";
+      $("copyButton").disabled = !$("output").value;
+      $("characterCount").textContent = `${Array.from($("output").value).length.toLocaleString("ja-JP")}文字`;
+      $("outputMeta").textContent = currentData
+        ? `${currentLabel} · ${count ? "選択項目を出力中" : "出力する項目を選択してください"}`
+        : "シートはまだ読み込まれていません";
+    }
+
+    function saveOptions() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(selection())); }
+      catch { /* 保存が制限された環境でも出力とコピーを使えるようにする。 */ }
+    }
+
+    function optionsChanged() {
+      saveOptions();
+      renderOutput();
+      if (currentData) setStatus($("output").value ? "選択した項目で出力を更新しました。" : "出力する項目を1つ以上選択してください。");
+    }
+
+    function setPreset(preset) {
+      for (const [key, , initial, choices] of FIELDS) {
+        setOption(key, preset === "default" ? initial : choices ? (preset === "all" ? choices.at(-1)[0] : "none") : preset === "all");
+      }
+      optionsChanged();
+    }
+
+    function cancelRequest() {
+      if (activeRequest) activeRequest.abort();
+      activeRequest = null;
+      $("loadButton").disabled = false;
+      $("loadButton").textContent = "読み込んで出力";
+      $("loadForm").setAttribute("aria-busy", "false");
+    }
+
+    function clearSheet() {
+      currentData = null;
+      currentLabel = "";
+      renderOutput();
+    }
+
+    async function loadEnemy(event) {
+      event.preventDefault();
+      cancelRequest();
+      clearSheet();
+      let jsonUrl;
+      try {
+        if (!$("sheetUrl").value.trim()) throw new Error("エネミーシートのURLを入力してください。");
+        jsonUrl = toJsonUrl($("sheetUrl").value);
+      } catch (error) { setStatus(error.message, "error"); $("sheetUrl").focus(); return; }
+      const controller = new AbortController();
+      activeRequest = controller;
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      $("loadButton").disabled = true;
+      $("loadButton").textContent = "読み込み中…";
+      $("loadForm").setAttribute("aria-busy", "true");
+      setStatus("エネミーシートを読み込んでいます…");
+      try {
+        const response = await fetch(jsonUrl, { signal:controller.signal, credentials:"omit", cache:"no-store", referrerPolicy:"no-referrer" });
+        if (!response.ok) {
+          if (response.status === 403) throw new Error("このシートは秘匿または閲覧制限されています。閲覧できるシートのURLを入力してください。（403）");
+          if (response.status === 404) throw new Error("シートまたは指定した過去ログが見つかりません。URLを確認してください。（404）");
+          throw new Error(`シートの取得に失敗しました。（HTTP ${response.status}）`);
+        }
+        let data;
+        try { data = await response.json(); }
+        catch (error) {
+          if (error.name === "AbortError") throw error;
+          throw new Error("JSONを取得できませんでした。URLと、設置先のAR2Eエネミー対応状況を確認してください。");
+        }
+        if (activeRequest !== controller) return;
+        currentData = validateEnemy(data);
+        currentLabel = valueOf(data, "enemyName");
+        renderOutput();
+        setStatus(`${currentLabel}を読み込みました。${$("output").value ? "テキストをコピーできます。" : "出力する項目を選択してください。"}`, "success");
+      } catch (error) {
+        if (activeRequest !== controller) return;
+        clearSheet();
+        const message = error.name === "AbortError" ? "読み込みがタイムアウトしました。時間をおいて、もう一度お試しください。"
+          : error instanceof TypeError ? "通信できませんでした。URL・接続状況を確認してください。設置先の外部取得制限や、HTTPSページからHTTPシートへのアクセス制限でも読み込めない場合があります。"
+          : error.message;
+        setStatus(message, "error");
+      } finally {
+        clearTimeout(timeout);
+        if (activeRequest === controller) cancelRequest();
+      }
+    }
+
+    async function copyOutput() {
+      const text = $("output").value;
+      if (!text) return;
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+        await navigator.clipboard.writeText(text);
+        setStatus("クリップボードにコピーしました。", "success");
+      } catch {
+        $("output").focus();
+        $("output").select();
+        $("output").setSelectionRange(0, $("output").value.length);
+        let copied = false;
+        try { copied = document.execCommand("copy"); } catch { /* 手動コピーへ案内する。 */ }
+        setStatus(copied ? "クリップボードにコピーしました。" : "自動コピーが許可されていません。選択したテキストを Ctrl+C（Macでは ⌘C）でコピーしてください。", copied ? "success" : "error");
+      }
+    }
+
+    function initialize() {
+      let saved = null;
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) saved = parsed;
+      } catch { /* 初回や保存領域が使えない場合は初期設定。 */ }
+      for (const group of OPTION_GROUPS) {
+        const fieldset = document.createElement("fieldset");
+        const legend = document.createElement("legend");
+        legend.textContent = group.label;
+        fieldset.append(legend);
+        for (const [key, label, initial, choices] of group.fields) {
+          const inputs = [];
+          const container = choices ? document.createElement("fieldset") : fieldset;
+          if (choices) {
+            container.className = "mode-option";
+            const modeLegend = document.createElement("legend");
+            modeLegend.textContent = label;
+            container.append(modeLegend);
+            fieldset.append(container);
+          }
+          for (const [value, text] of choices || [["", label]]) {
+            const wrapper = document.createElement("label");
+            wrapper.className = "option";
+            const input = document.createElement("input");
+            input.type = choices ? "radio" : "checkbox";
+            input.name = key;
+            input.value = value;
+            input.addEventListener("change", optionsChanged);
+            inputs.push(input);
+            wrapper.append(input, document.createTextNode(text));
+            container.append(wrapper);
+          }
+          if (key === "defense") {
+            const hint = document.createElement("p");
+            hint.className = "mode-hint";
+            hint.textContent = "数値の並び：物理／魔法";
+            container.append(hint);
+          }
+          optionControls.set(key, inputs);
+          // 旧版のチェック設定も保持し、有効だったスキルは新しい初期モードへ移す。
+          const stored = saved?.[key];
+          const restored = choices
+            ? choices.some(([value]) => value === stored) ? stored : typeof stored === "boolean" ? (stored ? initial : "none") : initial
+            : typeof stored === "boolean" ? stored : initial;
+          setOption(key, restored);
+        }
+        $("settingsFields").append(fieldset);
+      }
+      $("loadForm").addEventListener("submit", loadEnemy);
+      $("copyButton").addEventListener("click", copyOutput);
+      $("defaultButton").addEventListener("click", () => setPreset("default"));
+      $("allButton").addEventListener("click", () => setPreset("all"));
+      $("noneButton").addEventListener("click", () => setPreset("none"));
+      $("sheetUrl").addEventListener("input", () => {
+        cancelRequest();
+        clearSheet();
+        setStatus("URLを入力したら「読み込んで出力」を押してください。");
+      });
+      renderOutput();
+    }
+    initialize();
+  </script>
+</body>
+</html>
