@@ -235,6 +235,12 @@
       color: var(--danger);
     }
 
+    .storage-note {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
     .sheet-result {
       min-height: 26px;
       margin-top: 8px;
@@ -351,6 +357,7 @@
         <button class="secondary" type="button" id="addUrl">URLを追加</button>
       </div>
       <p class="status" id="status" aria-live="polite"></p>
+      <p class="storage-note" id="guildStorageNote" aria-live="polite">ギルドURLから読み込んだJSONは、このブラウザーのローカルストレージにURLごとに1件保存され、再読込時に上書きされます。</p>
     </section>
 
 
@@ -496,6 +503,8 @@
   <script>
     const urlList = document.querySelector("#urlList");
     const status = document.querySelector("#status");
+    const guildStorageNote = document.querySelector("#guildStorageNote");
+    const guildStorageNotice = guildStorageNote.textContent;
     const sessionStatus = document.querySelector("#sessionStatus");
     const output = document.querySelector("#output");
     const guildOutput = document.querySelector("#guildOutput");
@@ -541,6 +550,7 @@
       bulk: "",
     };
     const savedGmNameKey = "trpgSessionTool.gmName";
+    const guildJsonStoragePrefix = "trpgSessionTool.guildJson:";
 
     function getJapanDateString() {
       return new Intl.DateTimeFormat("ja-JP", {
@@ -1048,6 +1058,16 @@ PL：${players}
       return url.href;
     }
 
+    function saveRawGuildJson(sheetUrl, rawJson) {
+      try {
+        const key = guildJsonStoragePrefix + normalizeSheetUrl(sheetUrl);
+        localStorage.setItem(key, rawJson);
+        guildStorageNote.textContent = guildStorageNotice;
+      } catch (error) {
+        guildStorageNote.textContent = "ギルドJSONをローカルストレージに保存できませんでした。ブラウザーの保存設定・空き容量を確認してください。読込処理は続行します。";
+      }
+    }
+
     async function fetchSheetData(sheetUrl) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
@@ -1057,8 +1077,10 @@ PL：${players}
           throw new Error(`読み込みに失敗しました。HTTP ${response.status}`);
         }
         let data;
+        let rawJson;
         try {
-          data = await response.json();
+          rawJson = await response.text();
+          data = JSON.parse(rawJson);
         } catch (error) {
           throw new Error("シートのJSONを取得できませんでした。URLと閲覧権限を確認してください。");
         }
@@ -1067,6 +1089,10 @@ PL：${players}
         }
         if (data.result && data.result !== "OK") {
           throw new Error(data.message || data.result);
+        }
+        // どのタブから取得しても、履歴追加や表示用の加工より先に受信本文を保存する。
+        if (data.type === "g" || (data.guildName && !data.characterName && !data.aka)) {
+          saveRawGuildJson(sheetUrl, rawJson);
         }
         return data;
       } catch (error) {
